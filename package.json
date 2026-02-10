@@ -1,0 +1,19 @@
+{
+  "name": "spx-miner-platform",
+  "version": "1.0.0",
+  "description": "SPX Mining Platform - MERN Stack",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npm run dev",
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "build": "cd frontend && npm run build",
+    "init-db": "cd backend && node init-db.js"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
