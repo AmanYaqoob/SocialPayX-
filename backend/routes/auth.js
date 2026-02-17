@@ -64,26 +64,19 @@ router.post('/register', [
       console.log(`🎉 Referral bonus: ${referredBy.username} mining rate increased by 0.005x`);
     }
 
-    // Generate verification code and log it to terminal
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log(`\n📧 EMAIL VERIFICATION CODE for ${email}: ${verificationCode}`);
-    console.log(`User: ${username} (${email})`);
-    console.log(`Code expires in 10 minutes\n`);
-    
-    // Store verification code temporarily (in production, use Redis or similar)
-    user.emailVerificationCode = verificationCode;
-    user.emailVerificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    // Auto-verify user (email verification disabled)
+    user.isEmailVerified = true;
     await user.save();
 
     res.status(201).json({
-      requiresVerification: true,
+      requiresVerification: false,
       email: user.email,
-      message: 'Registration successful. Please verify your email to continue.',
+      message: 'Registration successful! You can now login.',
       user: {
         id: user._id,
         email: user.email,
         username: user.username,
-        isEmailVerified: false
+        isEmailVerified: true
       }
     });
   } catch (error) {

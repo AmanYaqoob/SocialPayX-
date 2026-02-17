@@ -89,16 +89,13 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login" }) => {
           return;
         }
         
-        // If no verification required, login directly
-        login(response.user, response.token);
+        // If no verification required, prompt login
+        setMode("login");
         
         toast({
           title: "Account created!",
-          description: "Your account has been created.",
+          description: "Please sign in with your new account.",
         });
-        
-        onClose();
-        navigate("/dashboard");
       }
     } catch (error) {
       toast({
