@@ -65,7 +65,7 @@ const Referral = () => {
       navigator.share({
         title: "Join SPX Mining",
         text: `Join SPX Mining with my referral code: ${codeToShare}`,
-        url: `https://spxmining.com/ref/${codeToShare}`,
+        url: `https://socialpayx.com/ref/${codeToShare}`,
       });
     } else {
       copyCode();
@@ -109,9 +109,9 @@ const Referral = () => {
           <div className="bg-card/50 border border-border rounded-xl p-4 mb-6">
             <p className="text-xs text-muted-foreground mb-2">Your Referral Link</p>
             <div className="flex items-center justify-center gap-2">
-              <span className="text-sm text-primary truncate">https://spxmining.com/ref/{user?.referralCode || '39F8BC2A'}</span>
+              <span className="text-sm text-primary truncate">https://socialpayx.com/ref/{user?.referralCode || '39F8BC2A'}</span>
               <button onClick={() => {
-                navigator.clipboard.writeText(`https://spxmining.com/ref/${user?.referralCode || '39F8BC2A'}`);
+                navigator.clipboard.writeText(`https://socialpayx.com/ref/${user?.referralCode || '39F8BC2A'}`);
                 toast({ title: "Copied!", description: "Referral link copied to clipboard" });
               }} className="p-1 text-primary hover:bg-primary/10 rounded">
                 <Copy className="w-4 h-4" />

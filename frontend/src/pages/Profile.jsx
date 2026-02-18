@@ -211,9 +211,9 @@ const Profile = () => {
             <div>
               <label className="text-sm font-medium text-foreground mb-2 block">Referral Link</label>
               <div className="flex items-center gap-2 p-3 bg-input border border-border rounded-lg">
-                <span className="text-sm flex-1 truncate">https://spxmining.com/ref/{referralData?.referralCode || currentUser?.referralCode}</span>
-                <button 
-                  onClick={() => handleCopy(`https://spxmining.com/ref/${referralData?.referralCode || currentUser?.referralCode}`)}
+                <span className="text-sm flex-1 truncate">https://socialpayx.com/ref/{referralData?.referralCode || currentUser?.referralCode}</span>
+                <button
+                  onClick={() => handleCopy(`https://socialpayx.com/ref/${referralData?.referralCode || currentUser?.referralCode}`)}
                   className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
                 >
                   <Copy className="w-4 h-4" />

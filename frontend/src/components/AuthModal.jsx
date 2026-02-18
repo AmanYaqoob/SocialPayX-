@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import apiService from "../services/api.js";
 
-const AuthModal = ({ isOpen, onClose, initialMode = "login" }) => {
+const AuthModal = ({ isOpen, onClose, initialMode = "login", initialReferralCode = "" }) => {
   const [mode, setMode] = useState(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -13,7 +13,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login" }) => {
     email: "",
     password: "",
     confirmPassword: "",
-    referralCode: "",
+    referralCode: initialReferralCode,
     agreeTerms: false,
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -26,6 +26,13 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login" }) => {
   useEffect(() => {
     setMode(initialMode);
   }, [initialMode]);
+
+  // Pre-fill referral code when initialReferralCode changes
+  useEffect(() => {
+    if (initialReferralCode) {
+      setFormData((prev) => ({ ...prev, referralCode: initialReferralCode }));
+    }
+  }, [initialReferralCode]);
 
   if (!isOpen) return null;
 
@@ -211,8 +218,16 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login" }) => {
                   placeholder="Referral code (optional)"
                   value={formData.referralCode}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 bg-input border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none input-glow transition-all"
+                  readOnly={!!initialReferralCode}
+                  className={`w-full pl-10 pr-4 py-3 bg-input border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none transition-all ${
+                    initialReferralCode
+                      ? "border-primary/50 text-primary cursor-not-allowed opacity-80"
+                      : "border-border input-glow"
+                  }`}
                 />
+                {initialReferralCode && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-primary font-medium">Applied</span>
+                )}
               </div>
 
               <label className="flex items-center gap-2 cursor-pointer">
