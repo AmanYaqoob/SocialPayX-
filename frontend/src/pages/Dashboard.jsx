@@ -6,6 +6,7 @@ import BottomNav from "../components/BottomNav.jsx";
 import MiningCircle from "../components/MiningCircle.jsx";
 import { useToast } from "@/hooks/use-toast";
 import apiService from "../services/api.js";
+import AppDownloadPopup from "../components/AppDownloadPopup.jsx";
 
 const Dashboard = () => {
   const { user, isAuthenticated } = useContext(AuthContext);
@@ -300,7 +301,63 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Download App Banner */}
+      <div className="px-4 mb-6">
+        <div className="bg-gradient-to-r from-secondary/10 to-primary/10 border border-border rounded-2xl p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-secondary/30 to-primary/30 flex items-center justify-center flex-shrink-0">
+              <svg viewBox="0 0 24 24" className="w-5 h-5 text-primary" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                <line x1="12" y1="18" x2="12.01" y2="18"/>
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground leading-none mb-0.5">Get the App</p>
+              <p className="text-xs text-muted-foreground">Mine on the go — coming soon</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {/* Google Play */}
+            <a
+              href="#"
+              onClick={(e) => e.preventDefault()}
+              className="flex-1 flex items-center gap-2 px-3 py-2.5 bg-background border border-border rounded-xl hover:border-primary/50 hover:bg-primary/5 transition-all"
+              aria-label="Get it on Google Play"
+            >
+              <svg viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0" fill="none">
+                <path d="M3.18 23.76a2 2 0 0 0 2.04-.22l.1-.07 11.37-6.55-2.48-2.49L3.18 23.76z" fill="#EA4335"/>
+                <path d="M20.49 10.56 17.7 8.97l-2.79 2.79 2.79 2.79 2.82-1.62a1.6 1.6 0 0 0 0-2.37z" fill="#FBBC04"/>
+                <path d="M3.18.24a1.6 1.6 0 0 0-.56 1.24v21.04a1.6 1.6 0 0 0 .56 1.24l.1.08 11.76-11.76v-.16L3.28.16l-.1.08z" fill="#4285F4"/>
+                <path d="M14.21 11.76 3.18.24a2 2 0 0 1 2.04.22L17.7 8.97l-3.49 2.79z" fill="#34A853"/>
+              </svg>
+              <div className="min-w-0">
+                <p className="text-[9px] text-muted-foreground leading-none">GET IT ON</p>
+                <p className="text-xs font-semibold text-foreground leading-tight">Google Play</p>
+              </div>
+            </a>
+            {/* App Store */}
+            <a
+              href="#"
+              onClick={(e) => e.preventDefault()}
+              className="flex-1 flex items-center gap-2 px-3 py-2.5 bg-background border border-border rounded-xl hover:border-primary/50 hover:bg-primary/5 transition-all"
+              aria-label="Download on App Store"
+            >
+              <svg viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0" fill="currentColor">
+                <path className="text-foreground" d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+              </svg>
+              <div className="min-w-0">
+                <p className="text-[9px] text-muted-foreground leading-none">DOWNLOAD ON THE</p>
+                <p className="text-xs font-semibold text-foreground leading-tight">App Store</p>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+
       <BottomNav />
+
+      {/* App Download Popup */}
+      <AppDownloadPopup page="dashboard" />
     </div>
   );
 };
