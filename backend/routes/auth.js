@@ -1,5 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { body, validationResult } from 'express-validator';
 import User from '../models/User.js';
 import { generateReferralCode } from '../utils/helpers.js';
@@ -170,6 +171,79 @@ router.post('/verify-email', [
     console.log(`✅ Email verified successfully for ${email}`);
     
     res.json({ message: 'Email verified successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Forgot Password — generate reset token
+router.post('/forgot-password', [
+  body('email').isEmail().normalizeEmail()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    // Always return 200 to prevent email enumeration
+    if (!user) {
+      return res.json({ message: 'If that email is registered, a reset token has been generated.' });
+    }
+
+    // Generate plain token, store hashed version
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    user.passwordResetToken = hashedToken;
+    user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+    await user.save();
+
+    console.log(`🔑 Password reset token for ${email}: ${resetToken}`);
+
+    res.json({
+      message: 'Password reset token generated.',
+      resetToken, // returned directly since no email service is configured
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Reset Password — validate token and set new password
+router.post('/reset-password', [
+  body('token').notEmpty().withMessage('Reset token is required'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { token, password } = req.body;
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired reset token. Please request a new one.' });
+    }
+
+    user.password = password;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+
+    console.log(`✅ Password reset successful for ${user.email}`);
+
+    res.json({ message: 'Password reset successful. You can now log in with your new password.' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

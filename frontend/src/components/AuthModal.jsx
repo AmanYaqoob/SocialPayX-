@@ -1,12 +1,11 @@
 import { useState, useContext, useEffect } from "react";
-import { X, Eye, EyeOff, User, Mail, Lock, Gift } from "lucide-react";
+import { X, Eye, EyeOff, User, Mail, Lock, Gift, AlertCircle, CheckCircle, ArrowLeft } from "lucide-react";
 import { AuthContext } from "../App.jsx";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
 import apiService from "../services/api.js";
 
 const AuthModal = ({ isOpen, onClose, initialMode = "login", initialReferralCode = "" }) => {
-  const [mode, setMode] = useState(initialMode);
+  const [mode, setMode] = useState(initialMode); // "login" | "signup" | "forgot" | "reset"
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
@@ -16,15 +15,17 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login", initialReferralCode
     referralCode: initialReferralCode,
     agreeTerms: false,
   });
+  const [resetToken, setResetToken] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [alert, setAlert] = useState(null); // { type: "error" | "success", message: string }
 
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   // Update mode when initialMode changes
   useEffect(() => {
     setMode(initialMode);
+    setAlert(null);
   }, [initialMode]);
 
   // Pre-fill referral code when initialReferralCode changes
@@ -46,15 +47,40 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login", initialReferralCode
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setAlert(null);
     setIsLoading(true);
 
     try {
+      if (mode === "forgot") {
+        const response = await apiService.forgotPassword(formData.email);
+        if (response.resetToken) {
+          setResetToken(response.resetToken);
+          setMode("reset");
+          setAlert({ type: "success", message: "Token generated. Enter your new password below." });
+        } else {
+          setAlert({ type: "success", message: response.message || "If that email exists, reset instructions have been sent." });
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      if (mode === "reset") {
+        if (formData.password !== formData.confirmPassword) {
+          setAlert({ type: "error", message: "Passwords do not match" });
+          setIsLoading(false);
+          return;
+        }
+        await apiService.resetPassword(resetToken, formData.password);
+        setMode("login");
+        setResetToken("");
+        setFormData(prev => ({ ...prev, password: "", confirmPassword: "" }));
+        setAlert({ type: "success", message: "Password reset! Please sign in with your new password." });
+        setIsLoading(false);
+        return;
+      }
+
       if (mode === "signup" && formData.password !== formData.confirmPassword) {
-        toast({
-          title: "Error",
-          description: "Passwords do not match",
-          variant: "destructive",
-        });
+        setAlert({ type: "error", message: "Passwords do not match" });
         setIsLoading(false);
         return;
       }
@@ -63,12 +89,6 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login", initialReferralCode
       if (mode === "login") {
         response = await apiService.login(formData.email, formData.password);
         login(response.user, response.token);
-        
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully logged in.",
-        });
-        
         onClose();
         navigate("/dashboard");
       } else {
@@ -78,38 +98,21 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login", initialReferralCode
           formData.username,
           formData.referralCode
         );
-        
-        // Check if email verification is required
+
         if (response.requiresVerification) {
-          // Store email for verification page
           localStorage.setItem('pendingEmail', formData.email);
           localStorage.setItem('pendingPassword', formData.password);
-          
-          toast({
-            title: "Registration Successful!",
-            description: "Please check your terminal for the verification code.",
-          });
-          
           onClose();
           navigate('/verify-email');
           setIsLoading(false);
           return;
         }
-        
-        // If no verification required, prompt login
+
         setMode("login");
-        
-        toast({
-          title: "Account created!",
-          description: "Please sign in with your new account.",
-        });
+        setAlert({ type: "success", message: "Account created! Please sign in." });
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message || "Something went wrong",
-        variant: "destructive",
-      });
+      setAlert({ type: "error", message: error.message || "Something went wrong" });
     } finally {
       setIsLoading(false);
     }
@@ -135,18 +138,49 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login", initialReferralCode
 
         {/* Header */}
         <div className="text-center mb-6">
+          {(mode === "forgot" || mode === "reset") && (
+            <button
+              onClick={() => { setMode("login"); setAlert(null); setResetToken(""); }}
+              className="absolute top-4 left-4 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
           <h2 className="text-2xl font-bold text-foreground">
-            {mode === "login" ? "Welcome Back" : "Create Account"}
+            {mode === "login" && "Welcome Back"}
+            {mode === "signup" && "Create Account"}
+            {mode === "forgot" && "Forgot Password"}
+            {mode === "reset" && "Set New Password"}
           </h2>
           <p className="text-muted-foreground mt-1">
-            {mode === "login" 
-              ? "Sign in to continue mining SPX" 
-              : "Join the SPX mining community"}
+            {mode === "login" && "Sign in to continue mining SPX"}
+            {mode === "signup" && "Join the SPX mining community"}
+            {mode === "forgot" && "Enter your email to receive a reset token"}
+            {mode === "reset" && "Choose a strong new password"}
           </p>
         </div>
 
+        {/* Inline Alert */}
+        {alert && (
+          <div
+            className={`flex items-start gap-2 rounded-lg px-4 py-3 mb-4 text-sm font-medium border ${
+              alert.type === "error"
+                ? "bg-destructive/10 border-destructive/30 text-destructive"
+                : "bg-green-500/10 border-green-500/30 text-green-400"
+            }`}
+          >
+            {alert.type === "error" ? (
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            ) : (
+              <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            )}
+            <span>{alert.message}</span>
+          </div>
+        )}
+
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Username — signup only */}
           {mode === "signup" && (
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -162,54 +196,77 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login", initialReferralCode
             </div>
           )}
 
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <input
-              type="email"
-              name="email"
-              placeholder="Email address"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full pl-10 pr-4 py-3 bg-input border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none input-glow transition-all"
-            />
-          </div>
+          {/* Email — login, signup, forgot */}
+          {(mode === "login" || mode === "signup" || mode === "forgot") && (
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <input
+                type="email"
+                name="email"
+                placeholder="Email address"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                className="w-full pl-10 pr-4 py-3 bg-input border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none input-glow transition-all"
+              />
+            </div>
+          )}
 
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              placeholder="Password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              className="w-full pl-10 pr-12 py-3 bg-input border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none input-glow transition-all"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-            </button>
-          </div>
+          {/* Password — login, signup, reset */}
+          {(mode === "login" || mode === "signup" || mode === "reset") && (
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder={mode === "reset" ? "New password" : "Password"}
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className="w-full pl-10 pr-12 py-3 bg-input border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none input-glow transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+          )}
 
+          {/* Confirm Password — signup, reset */}
+          {(mode === "signup" || mode === "reset") && (
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <input
+                type={showPassword ? "text" : "password"}
+                name="confirmPassword"
+                placeholder="Confirm password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                className="w-full pl-10 pr-4 py-3 bg-input border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none input-glow transition-all"
+              />
+            </div>
+          )}
+
+          {/* Forgot password link — login only */}
+          {mode === "login" && (
+            <div className="text-right -mt-1">
+              <button
+                type="button"
+                onClick={() => { setMode("forgot"); setAlert(null); }}
+                className="text-sm text-primary hover:underline"
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
+
+          {/* Referral + Terms — signup only */}
           {mode === "signup" && (
             <>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="confirmPassword"
-                  placeholder="Confirm password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  className="w-full pl-10 pr-4 py-3 bg-input border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none input-glow transition-all"
-                />
-              </div>
-
               <div className="relative">
                 <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <input
@@ -260,21 +317,28 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login", initialReferralCode
                 Processing...
               </span>
             ) : (
-              mode === "login" ? "Sign In" : "Create Account"
+              <>
+                {mode === "login" && "Sign In"}
+                {mode === "signup" && "Create Account"}
+                {mode === "forgot" && "Send Reset Token"}
+                {mode === "reset" && "Reset Password"}
+              </>
             )}
           </button>
         </form>
 
-        {/* Toggle mode */}
-        <p className="text-center mt-6 text-muted-foreground">
-          {mode === "login" ? "Don't have an account? " : "Already have an account? "}
-          <button
-            onClick={() => setMode(mode === "login" ? "signup" : "login")}
-            className="text-primary hover:underline font-medium"
-          >
-            {mode === "login" ? "Sign Up" : "Sign In"}
-          </button>
-        </p>
+        {/* Toggle mode — only for login/signup */}
+        {(mode === "login" || mode === "signup") && (
+          <p className="text-center mt-6 text-muted-foreground">
+            {mode === "login" ? "Don't have an account? " : "Already have an account? "}
+            <button
+              onClick={() => { setMode(mode === "login" ? "signup" : "login"); setAlert(null); }}
+              className="text-primary hover:underline font-medium"
+            >
+              {mode === "login" ? "Sign Up" : "Sign In"}
+            </button>
+          </p>
+        )}
       </div>
     </div>
   );

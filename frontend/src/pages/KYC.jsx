@@ -29,7 +29,7 @@ const KYC = () => {
   const loadData = async () => {
     try {
       const [settingsData, kycResponse] = await Promise.all([
-        fetch('http://localhost:5001/api/admin/settings/public').then(r => r.json()),
+        apiService.getSettings(),
         apiService.getKYCStatus()
       ]);
       setSettings(settingsData);

@@ -13,6 +13,8 @@ const userSchema = new mongoose.Schema({
   emailVerificationCode: { type: String },
   emailVerificationExpires: { type: Date },
   emailVerificationToken: { type: String },
+  passwordResetToken: { type: String },
+  passwordResetExpires: { type: Date },
   
   // Mining data
   spxBalance: { type: Number, default: 0 },

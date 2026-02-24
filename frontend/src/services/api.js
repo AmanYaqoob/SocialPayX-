@@ -77,6 +77,20 @@ class ApiService {
     });
   }
 
+  async forgotPassword(email) {
+    return this.request('/auth/forgot-password', {
+      method: 'POST',
+      body: { email },
+    });
+  }
+
+  async resetPassword(token, password) {
+    return this.request('/auth/reset-password', {
+      method: 'POST',
+      body: { token, password },
+    });
+  }
+
   // Mining endpoints
   async startMining() {
     return this.request('/mining/start', { method: 'POST' });
