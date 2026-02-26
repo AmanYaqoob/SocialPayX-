@@ -91,7 +91,7 @@ const Referral = () => {
             Invited Friends & Get Rewards
           </h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Earn up to 1000X by referring others
+            Earn up to 50X by referring others
           </p>
 
           {/* Referral Code */}
