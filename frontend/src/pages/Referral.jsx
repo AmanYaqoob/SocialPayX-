@@ -42,14 +42,14 @@ const Referral = () => {
 
   const referralCode = user?.referralCode || "Loading...";
   const totalReferrals = referralData?.referralCount || 0;
-  const maxReferrals = 1615;
+  const maxReferrals = 100;
   const earnedFromReferrals = referralData?.referralEarnings || 0;
 
   const myReferrals = referralData?.referredUsers || [];
 
   const topMiners = [
     { name: "Alamin Hossain", amount: 104, currency: "SPX", rank: 1 },
-    { name: "Alex Smith", amount: 104, currency: "SPX", rank: 2 },
+    { name: "Alex Smith", amount: 102, currency: "SPX", rank: 2 },
     { name: "John Doe", amount: 98, currency: "SPX", rank: 3 },
   ];
 
