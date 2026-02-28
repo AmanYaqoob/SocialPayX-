@@ -163,7 +163,7 @@ const Landing = () => {
           <div className="flex items-center gap-3">
             {/* Google Play Badge */}
             <a
-              href="#"
+              href="https://median.co/share/odmqqmk#apk"
               onClick={(e) => e.preventDefault()}
               className="store-badge flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-xl hover:border-primary/50 hover:bg-primary/5"
               aria-label="Get it on Google Play"
@@ -183,7 +183,7 @@ const Landing = () => {
 
             {/* App Store Badge */}
             <a
-              href="#"
+              href="https://median.co/share/odmqqmk#apk"
               onClick={(e) => e.preventDefault()}
               className="store-badge flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-xl hover:border-primary/50 hover:bg-primary/5"
               aria-label="Download on the App Store"
