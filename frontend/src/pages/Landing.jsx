@@ -39,10 +39,10 @@ const Landing = () => {
   ];
 
   const stats = [
-    { value: "10M+", label: "Total Users" },
-    { value: "500M", label: "SPX Mined" },
+    { value: "100k+", label: "Total Users" },
+    { value: "500k", label: "SPX Mined" },
     { value: "99.9%", label: "Uptime" },
-    { value: "$2.5M", label: "Rewards Paid" },
+    { value: "100k+", label: "Rewards Paid" },
   ];
 
   return (
