@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SPX Mining</title>
+    <meta name="description" content="Start Mining SPX Tokens Today" />
+    <meta name="author" content="SPX Mining" />
+
+    <meta property="og:title" content="SPX Mining" />
+    <meta property="og:description" content="Start Mining SPX Tokens Today" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/logo.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@SPXMining" />
+    <meta name="twitter:image" content="/logo.png" />
+    <script type="module" crossorigin src="/assets/index-e26jSWvE.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-GgwwvUmU.css">
+  </head>
+
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
