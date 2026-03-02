@@ -164,7 +164,7 @@ const Landing = () => {
             {/* Google Play Badge */}
             <a
               href="/SocialPayX.apk" download="SocialPayX.apk"
-              onClick={(e) => e.preventDefault()}
+              
               className="store-badge flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-xl hover:border-primary/50 hover:bg-primary/5"
               aria-label="Get it on Google Play"
               style={{ animation: "badgeSlideLeft 0.6s ease-out 0.65s both" }}
