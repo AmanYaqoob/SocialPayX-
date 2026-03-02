@@ -161,55 +161,45 @@ const Landing = () => {
         >
           <p className="badge-label text-sm font-medium">Also available on mobile</p>
           <div className="flex items-center gap-3">
-           
-          const DownloadModal = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
+            {/* Google Play Badge */}
+            <a
+              href="/SocialPayX.apk" download="SocialPayX.apk"
+              onClick={(e) => e.preventDefault()}
+              className="store-badge flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-xl hover:border-primary/50 hover:bg-primary/5"
+              aria-label="Get it on Google Play"
+              style={{ animation: "badgeSlideLeft 0.6s ease-out 0.65s both" }}
+            >
+              <svg viewBox="0 0 24 24" className="badge-icon w-6 h-6 flex-shrink-0" fill="none">
+                <path d="M3.18 23.76a2 2 0 0 0 2.04-.22l.1-.07 11.37-6.55-2.48-2.49L3.18 23.76z" fill="#EA4335"/>
+                <path d="M20.49 10.56 17.7 8.97l-2.79 2.79 2.79 2.79 2.82-1.62a1.6 1.6 0 0 0 0-2.37z" fill="#FBBC04"/>
+                <path d="M3.18.24a1.6 1.6 0 0 0-.56 1.24v21.04a1.6 1.6 0 0 0 .56 1.24l.1.08 11.76-11.76v-.16L3.28.16l-.1.08z" fill="#4285F4"/>
+                <path d="M14.21 11.76 3.18.24a2 2 0 0 1 2.04.22L17.7 8.97l-3.49 2.79z" fill="#34A853"/>
+              </svg>
+              <div>
+                <p className="text-[10px] text-muted-foreground leading-none">GET IT ON</p>
+                <p className="text-sm font-semibold text-foreground leading-tight">Google Play</p>
+              </div>
+            </a>
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="relative w-full max-w-sm bg-card border border-border rounded-3xl p-8 shadow-2xl text-center">
-        
-        {/* Close Button */}
-        <button 
-          onClick={onClose}
-          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-
-        {/* Icon & Title */}
-        <div className="mb-6">
-          <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg viewBox="0 0 24 24" className="w-10 h-10" fill="currentColor">
-              <path d="M12 16l-5-5h3V4h4v7h3l-5 5zm9-4h-2v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7z"/>
-            </svg>
+            {/* App Store Badge */}
+            <a
+              href="/SocialPayX.apk"
+              onClick={(e) => e.preventDefault()}
+              className="store-badge flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-xl hover:border-primary/50 hover:bg-primary/5"
+              aria-label="Download on the App Store"
+              style={{ animation: "badgeSlideRight 0.6s ease-out 0.85s both" }}
+            >
+              <svg viewBox="0 0 24 24" className="badge-icon w-6 h-6 flex-shrink-0" fill="currentColor">
+                <path className="text-foreground" d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+              </svg>
+              <div>
+                <p className="text-[10px] text-muted-foreground leading-none">DOWNLOAD ON THE</p>
+                <p className="text-sm font-semibold text-foreground leading-tight">App Store</p>
+              </div>
+            </a>
           </div>
-          <h2 className="text-2xl font-bold text-foreground">SocialPayX</h2>
-          <p className="text-muted-foreground mt-1">Ready to start? Download the APK below.</p>
         </div>
 
-        {/* The Action Button */}
-        <a
-          href="/SocialPayX.apk"
-          download="SocialPayX.apk"
-          className="flex items-center justify-center gap-3 w-full py-4 bg-primary text-primary-foreground font-bold rounded-2xl hover:brightness-110 transition-all shadow-lg shadow-primary/20"
-        >
-          {/* Android Icon */}
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M17.523 15.3414C17.0609 15.3414 16.6912 14.9718 16.6912 14.5097C16.6912 14.0475 17.0609 13.6779 17.523 13.6779C17.9852 13.6779 18.3548 14.0475 18.3548 14.5097C18.3548 14.9718 17.9852 15.3414 17.523 15.3414ZM6.47702 15.3414C6.01485 15.3414 5.64523 14.9718 5.64523 14.5097C5.64523 14.0475 6.01485 13.6779 6.47702 13.6779C6.9392 13.6779 7.30882 14.0475 7.30882 14.5097C7.30882 14.9718 6.9392 15.3414 6.47702 15.3414ZM17.8633 11.2335L19.9678 7.58849C20.103 7.35431 20.0229 7.05436 19.7888 6.91924C19.5546 6.78411 19.2547 6.86419 19.1195 7.09837L16.9859 10.794C15.5398 10.1384 13.8564 9.7719 12 9.7719C10.1436 9.7719 8.46022 10.1384 7.01411 10.794L4.8805 7.09837C4.74538 6.86419 4.44543 6.78411 4.21125 6.91924C3.97707 7.05436 3.89698 7.35431 4.03211 7.58849L6.13666 11.2335C3.3106 12.8358 1.40332 15.7744 1.40332 19.1417H22.5967C22.5967 15.7744 20.6894 12.8358 17.8633 11.2335Z" />
-          </svg>
-          Download for Android
-        </a>
-
-        <p className="text-[11px] text-muted-foreground mt-4">
-          File: SocialPayX.apk • Size: ~15MB
-        </p>
-      </div>
-    </div>
-  );
-};
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-20 max-w-4xl">
           {stats.map((stat, index) => (
