@@ -25,7 +25,7 @@ app.use(morgan('combined'));
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? 'https://your-domain.com' : ['http://localhost:5173', 'http://localhost:5174'],
+  origin: ['https://socialpayx.com', 'https://www1.socialpayx.com'],
   credentials: true
 }));
 
@@ -62,7 +62,7 @@ mongoose.connect(process.env.MONGODB_URI)
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
+app.listen(PORT, '127.0.0.1', () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📡 API available at http://localhost:${PORT}/api`);
+  console.log(`📡 Proxying through Nginx at https://socialpayx.com/api`);
 });
