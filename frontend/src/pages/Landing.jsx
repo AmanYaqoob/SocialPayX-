@@ -186,7 +186,7 @@ const Landing = () => {
               href="/SocialPayX.apk"
               onClick={(e) => e.preventDefault()}
               className="store-badge flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-xl hover:border-primary/50 hover:bg-primary/5"
-              aria-label="Download on the App Store"
+              aria-label="Coming Soon"
               style={{ animation: "badgeSlideRight 0.6s ease-out 0.85s both" }}
             >
               <svg viewBox="0 0 24 24" className="badge-icon w-6 h-6 flex-shrink-0" fill="currentColor">
