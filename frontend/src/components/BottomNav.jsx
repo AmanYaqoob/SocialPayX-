@@ -27,7 +27,8 @@ const BottomNav = () => {
     { icon: Newspaper, label: "News", path: "/news", visible: true },
     { icon: Users, label: "Referral", path: "/referral", visible: settings?.referralEnabled !== false },
     { icon: FileText, label: "Whitepaper", path: "/whitepaper", visible: true },
-    { icon: Wallet, label: "Wallet", path: "/wallet", visible: true },
+    { icon: Wallet, label: "Wallet", path: "/wallet", visible: true }
+    { icon: ClipboardList, label: "Tasks", path: "/tasks", visible: true },,
   ].filter(item => item.visible);
 
   return (
