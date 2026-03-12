@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useContext, useState, useEffect } from "react";
-import { Home, ListTodo, Users, FileText, Wallet, Newspaper } from "lucide-react";
+import { Home, ListTodo, Users, FileText, Wallet, Newspaper, ClipboardList } from "lucide-react";
 import { AuthContext } from "../App.jsx";
 import apiService from "../services/api.js";
 
