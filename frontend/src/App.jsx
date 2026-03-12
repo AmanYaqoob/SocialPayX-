@@ -83,6 +83,7 @@ const App = () => {
               <Route path="/verify-email" element={<EmailVerification />} />
               <Route path="/news" element={<News />} />
               <Route path="/news/:id" element={<NewsDetail />} />
+              <Route path="/tasks" element={<Tasks />} />
               
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
