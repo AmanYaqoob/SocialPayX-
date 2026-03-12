@@ -17,7 +17,7 @@ import EmailVerification from "./pages/EmailVerification.jsx";
 import News from "./pages/News.jsx";
 import NewsDetail from "./pages/NewsDetail.jsx";
 import NotFound from "./pages/NotFound.jsx";
-
+import Tasks from './pages/Tasks';
 // Admin imports
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
