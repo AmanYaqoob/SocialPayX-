@@ -53,6 +53,10 @@ const userSchema = new mongoose.Schema({
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   referralEarnings: { type: Number, default: 0 },
   
+  // Task data
+  completedTasks: [{ type: String }],
+  lastDailyBonus: { type: Date },
+
   // Wallet data
   withdrawalRequests: [{
     amount: Number,
