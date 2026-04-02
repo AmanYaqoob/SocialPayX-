@@ -200,7 +200,7 @@ const Dashboard = () => {
           <div className="bg-card border border-border rounded-xl p-4">
             <p className="text-xs text-muted-foreground mb-1">Mining Rate</p>
             <p className="text-lg font-bold text-foreground">
-              {miningData?.miningRate || 0.1} <span className="text-primary text-xs">SPX/hr</span>
+              {parseFloat(miningData?.miningRate || 0.1).toFixed(4)} <span className="text-primary text-xs">SPX/hr</span>
             </p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4">
