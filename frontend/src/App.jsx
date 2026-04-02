@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState, createContext, useEffect } from "react";
 import apiService from "./services/api.js";
-import GroupChat from "./components/GroupChat.jsx";
 import Landing from "./pages/Landing.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Wallet from "./pages/Wallet.jsx";
@@ -18,7 +17,8 @@ import EmailVerification from "./pages/EmailVerification.jsx";
 import News from "./pages/News.jsx";
 import NewsDetail from "./pages/NewsDetail.jsx";
 import NotFound from "./pages/NotFound.jsx";
-import Tasks from './pages/Tasks';
+import Tasks from "./pages/Tasks.jsx";
+import SocialFeed from "./pages/SocialFeed.jsx";
 // Admin imports
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
@@ -39,7 +39,8 @@ const App = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token =
+      localStorage.getItem("token") || sessionStorage.getItem("token");
     if (token) {
       apiService.setToken(token);
       setIsAuthenticated(true);
@@ -47,20 +48,33 @@ const App = () => {
     setLoading(false);
   }, []);
 
-  const login = (userData, token) => {
+  const login = (userData, token, rememberMe = false) => {
     setUser(userData);
     setIsAuthenticated(true);
     apiService.setToken(token);
+    if (rememberMe) {
+      localStorage.setItem("token", token);
+      sessionStorage.removeItem("token");
+    } else {
+      sessionStorage.setItem("token", token);
+      localStorage.removeItem("token");
+    }
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
     apiService.removeToken();
+    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -85,6 +99,7 @@ const App = () => {
               <Route path="/news" element={<News />} />
               <Route path="/news/:id" element={<NewsDetail />} />
               <Route path="/tasks" element={<Tasks />} />
+              <Route path="/feed" element={<SocialFeed />} />
 
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
@@ -99,9 +114,6 @@ const App = () => {
 
               <Route path="*" element={<NotFound />} />
             </Routes>
-
-            {/* Global group chat - visible on all user pages when logged in */}
-            <GroupChat />
           </BrowserRouter>
         </TooltipProvider>
       </AuthContext.Provider>
