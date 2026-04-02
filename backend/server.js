@@ -31,13 +31,21 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
+// Rate limiting - general (skip chat routes)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  skip: (req) => req.path.startsWith('/api/chat')
 });
 app.use(limiter);
 
+// Separate chat rate limiter (more lenient)
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60, // 60 requests per minute per IP
+  skip: (req) => req.path === '/api/chat/send', // send has its own in-memory limit
+});
+app.use('/api/chat', chatLimiter);
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
