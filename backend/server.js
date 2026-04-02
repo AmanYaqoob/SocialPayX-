@@ -15,42 +15,28 @@ import referralRoutes from './routes/referral.js';
 import adminRoutes from './routes/admin.js';
 import newsRoutes from './routes/news.js';
 import tasksRoutes from './routes/tasks.js';
-import chatRoutes from './routes/chat.js';
+import feedRoutes from './routes/feed.js';
 
 dotenv.config();
 
 const app = express();
 
-// Logging middleware
 app.use(morgan('combined'));
-
-// Security middleware
 app.use(helmet());
 app.use(cors({
   origin: ['https://socialpayx.com', 'https://www1.socialpayx.com'],
   credentials: true
 }));
 
-// Rate limiting - general (skip chat routes)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  skip: (req) => req.path.startsWith('/api/chat')
 });
 app.use(limiter);
 
-// Separate chat rate limiter (more lenient)
-const chatLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 60, // 60 requests per minute per IP
-  skip: (req) => req.path === '/api/chat/send', // send has its own in-memory limit
-});
-app.use('/api/chat', chatLimiter);
-// Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/mining', miningRoutes);
@@ -60,15 +46,13 @@ app.use('/api/referral', referralRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/tasks', tasksRoutes);
-app.use('/api/chat', chatRoutes);
+app.use('/api/feed', feedRoutes);
 
-// Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err.stack);
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
-// Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connected successfully'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
