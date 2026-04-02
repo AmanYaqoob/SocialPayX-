@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useContext, useState, useEffect } from "react";
-import { Home, ListTodo, Users, FileText, Wallet, Newspaper, ClipboardList } from "lucide-react";
+import { Home, Users, Wallet, Newspaper, ClipboardList, Rss } from "lucide-react";
 import { AuthContext } from "../App.jsx";
 import apiService from "../services/api.js";
 
@@ -16,33 +16,32 @@ const BottomNav = () => {
         const settingsData = await apiService.getSettings();
         setSettings(settingsData);
       } catch (error) {
-        console.error('Failed to load settings:', error);
+        console.error("Failed to load settings:", error);
       }
     };
     loadSettings();
   }, []);
 
   const navItems = [
-    { icon: Home, label: "Home", path: "/dashboard", visible: true },
-    { icon: Newspaper, label: "News", path: "/news", visible: true },
-    { icon: Users, label: "Referral", path: "/referral", visible: settings?.referralEnabled !== false },
-    { icon: FileText, label: "Whitepaper", path: "/whitepaper", visible: true },
-    { icon: Wallet, label: "Wallet", path: "/wallet", visible: true },
-    { icon: ClipboardList, label: "Tasks", path: "/tasks", visible: true }
+    { icon: Home,          label: "Home",    path: "/dashboard", visible: true },
+    { icon: Newspaper,     label: "News",    path: "/news",      visible: true },
+    { icon: Rss,           label: "Feed",    path: "/feed",      visible: true },
+    { icon: Users,         label: "Referral",path: "/referral",  visible: settings?.referralEnabled !== false },
+    { icon: Wallet,        label: "Wallet",  path: "/wallet",    visible: true },
+    { icon: ClipboardList, label: "Tasks",   path: "/tasks",     visible: true },
   ].filter(item => item.visible);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border z-50">
-      <div className="max-w-md mx-auto flex items-center justify-around py-3 px-4">
+      <div className="max-w-md mx-auto flex items-center justify-around py-3 px-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
-          
           return (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`relative flex flex-col items-center gap-1 px-3 py-1 transition-all duration-300 ${
+              className={`relative flex flex-col items-center gap-1 px-2 py-1 transition-all duration-300 ${
                 isActive ? "nav-item-active" : "text-muted-foreground hover:text-foreground"
               }`}
             >
