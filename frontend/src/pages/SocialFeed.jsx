@@ -52,7 +52,9 @@ const PostCard = ({ post, currentUser, onLike, onShare, onDelete, onComment }) =
   const [showMenu, setShowMenu]         = useState(false);
   const { toast } = useToast();
 
-  const isOwn = post.userId?.toString() === currentUser?.id?.toString();
+  // Support both _id (from profile API) and id (from login response)
+  const currentUserId = currentUser?._id?.toString() || currentUser?.id?.toString();
+  const isOwn = !!currentUserId && post.userId?.toString() === currentUserId;
 
   const loadComments = async () => {
     if (commentsLoaded) return;
@@ -317,15 +319,25 @@ const SocialFeed = () => {
   const navigate                  = useNavigate();
   const { toast }                 = useToast();
 
-  const [posts, setPosts]         = useState([]);
-  const [page, setPage]           = useState(1);
-  const [hasMore, setHasMore]     = useState(true);
-  const [loading, setLoading]     = useState(true);
+  // Load profile from API so _id is always populated even after page refresh
+  const [currentUser, setCurrentUser] = useState(user);
+  const [posts, setPosts]             = useState([]);
+  const [page, setPage]               = useState(1);
+  const [hasMore, setHasMore]         = useState(true);
+  const [loading, setLoading]         = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) navigate("/");
   }, [isAuthenticated, navigate]);
+
+  // Always load full profile from API — fixes delete button disappearing after refresh
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    apiService.getProfile()
+      .then(profile => setCurrentUser(profile))
+      .catch(() => setCurrentUser(user));
+  }, [isAuthenticated]);
 
   const fetchPosts = useCallback(async (pageNum = 1, append = false) => {
     try {
@@ -420,7 +432,7 @@ const SocialFeed = () => {
       </header>
 
       <div className="px-4 pt-4">
-        <CreatePost currentUser={user} onPosted={handlePosted} />
+        <CreatePost currentUser={currentUser} onPosted={handlePosted} />
 
         {posts.length === 0 && (
           <div className="text-center py-16 text-muted-foreground">
@@ -435,7 +447,7 @@ const SocialFeed = () => {
             <PostCard
               key={post._id}
               post={post}
-              currentUser={user}
+              currentUser={currentUser}
               onLike={handleLike}
               onShare={handleShare}
               onDelete={handleDelete}
