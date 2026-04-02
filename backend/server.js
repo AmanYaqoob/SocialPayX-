@@ -15,6 +15,7 @@ import referralRoutes from './routes/referral.js';
 import adminRoutes from './routes/admin.js';
 import newsRoutes from './routes/news.js';
 import tasksRoutes from './routes/tasks.js';
+import chatRoutes from './routes/chat.js';
 
 dotenv.config();
 
@@ -51,6 +52,7 @@ app.use('/api/referral', referralRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/tasks', tasksRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
