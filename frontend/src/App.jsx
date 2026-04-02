@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState, createContext, useEffect } from "react";
 import apiService from "./services/api.js";
+import GroupChat from "./components/GroupChat.jsx";
 import Landing from "./pages/Landing.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Wallet from "./pages/Wallet.jsx";
@@ -84,7 +85,7 @@ const App = () => {
               <Route path="/news" element={<News />} />
               <Route path="/news/:id" element={<NewsDetail />} />
               <Route path="/tasks" element={<Tasks />} />
-              
+
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminLogin />} />
@@ -95,9 +96,12 @@ const App = () => {
               <Route path="/admin/mining" element={<AdminMining />} />
               <Route path="/admin/withdrawals" element={<AdminWithdrawals />} />
               <Route path="/admin/settings" element={<AdminSettings />} />
-              
+
               <Route path="*" element={<NotFound />} />
             </Routes>
+
+            {/* Global group chat - visible on all user pages when logged in */}
+            <GroupChat />
           </BrowserRouter>
         </TooltipProvider>
       </AuthContext.Provider>
