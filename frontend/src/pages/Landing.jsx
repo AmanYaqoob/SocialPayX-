@@ -89,7 +89,7 @@ const Landing = () => {
             Start Mining Now
             <ArrowRight className="w-5 h-5" />
           </button>
-          
+          <a
             href="#features"
             className="flex items-center gap-2 px-8 py-4 bg-card border border-border rounded-xl font-semibold text-foreground hover:bg-muted transition-colors"
           >
@@ -101,7 +101,7 @@ const Landing = () => {
         {/* App Download Button */}
         <div className="mt-10 flex flex-col items-center gap-3">
           <p className="text-sm font-medium text-muted-foreground">Also available on mobile</p>
-          
+          <a
             href="/SocialPayX.apk"
             download="SocialPayX.apk"
             className="flex items-center gap-3 px-6 py-3 btn-gradient rounded-xl font-semibold text-foreground btn-glow hover:scale-105 transition-transform"
