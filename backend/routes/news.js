@@ -37,26 +37,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Public: Get single news by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const news = await News.findById(req.params.id).populate('author', 'username');
-    
-    if (!news || !news.isPublished) {
-      return res.status(404).json({ message: 'News not found' });
-    }
-
-    // Increment views
-    news.views += 1;
-    await news.save();
-
-    res.json(news);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-});
-
-// Admin: Get all news (including unpublished)
+// Admin: Get all news (including unpublished) — MUST be before /:id
 router.get('/admin/all', adminAuth, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -79,6 +60,25 @@ router.get('/admin/all', adminAuth, async (req, res) => {
         total
       }
     });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Public: Get single news by ID — MUST be after /admin/all
+router.get('/:id', async (req, res) => {
+  try {
+    const news = await News.findById(req.params.id).populate('author', 'username');
+    
+    if (!news || !news.isPublished) {
+      return res.status(404).json({ message: 'News not found' });
+    }
+
+    // Increment views
+    news.views += 1;
+    await news.save();
+
+    res.json(news);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
