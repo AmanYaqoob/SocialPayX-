@@ -10,9 +10,10 @@ const defaultForm = {
   question: "",
   options: ["", "", "", ""],
   correctAnswer: "",
-  reward: 10,
+  reward: 2,
   isActive: true,
-  category: "quiz"
+  category: "quiz",
+  url: ""
 };
 
 const AdminTasks = () => {
@@ -84,7 +85,8 @@ const AdminTasks = () => {
       correctAnswer: task.correctAnswer,
       reward: task.reward,
       isActive: task.isActive,
-      category: task.category || "quiz"
+      category: task.category || "quiz",
+      url: task.url || ""
     });
     setShowModal(true);
   };
@@ -233,6 +235,15 @@ const AdminTasks = () => {
                     className="w-full px-4 py-2.5 bg-input border border-border rounded-lg text-foreground"
                     placeholder="The correct answer text" required />
                 </div>
+                {formData.category === "social" && (
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">Link URL <span className="text-destructive">*</span></label>
+                    <input type="url" value={formData.url} onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-input border border-border rounded-lg text-foreground"
+                      placeholder="https://instagram.com/socialpayx" />
+                    <p className="text-xs text-muted-foreground mt-1">URL that opens when user clicks the task</p>
+                  </div>
+                )}
                 <div>
                   <label className="text-sm font-medium text-foreground mb-1.5 block">Reward (SPX) <span className="text-destructive">*</span></label>
                   <input type="number" min="1" max="10000" value={formData.reward}
