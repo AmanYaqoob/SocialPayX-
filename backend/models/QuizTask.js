@@ -14,8 +14,8 @@ const quizTaskSchema = new mongoose.Schema({
   },
   question: {
     type: String,
-    required: true,
-    trim: true
+    trim: true,
+    default: ''
   },
   options: [{
     type: String,
@@ -23,14 +23,14 @@ const quizTaskSchema = new mongoose.Schema({
   }],
   correctAnswer: {
     type: String,
-    required: true,
-    trim: true
+    trim: true,
+    default: ''
   },
   reward: {
     type: Number,
     required: true,
     min: 1,
-    default: 10
+    default: 2
   },
   isActive: {
     type: Boolean,
@@ -40,6 +40,11 @@ const quizTaskSchema = new mongoose.Schema({
     type: String,
     enum: ['quiz', 'social'],
     default: 'quiz'
+  },
+  url: {
+    type: String,
+    trim: true,
+    default: ''
   }
 }, {
   timestamps: true
