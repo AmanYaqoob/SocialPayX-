@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Newspaper,
+  ClipboardList,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -22,6 +23,7 @@ const AdminSidebar = () => {
     { icon: LayoutDashboard, label: "Dashboard", path: "/admin/dashboard" },
     { icon: Users, label: "Users", path: "/admin/users" },
     { icon: Newspaper, label: "News", path: "/admin/news" },
+    { icon: ClipboardList, label: "Tasks", path: "/admin/tasks" },
     { icon: Shield, label: "KYC Management", path: "/admin/kyc" },
     { icon: Coins, label: "Mining Settings", path: "/admin/mining" },
     { icon: Wallet, label: "Withdrawals", path: "/admin/withdrawals" },
