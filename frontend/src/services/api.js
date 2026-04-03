@@ -94,6 +94,12 @@ class ApiService {
   async updateSettings(settings) { return this.request('/admin/settings', { method: 'PUT', body: settings }); }
   async getWithdrawalRequests(status = 'pending') { return this.request(`/admin/withdrawals?status=${status}`); }
   async processWithdrawal(userId, withdrawalId, status) { return this.request(`/admin/withdrawals/${userId}/${withdrawalId}`, { method: 'PUT', body: { status } }); }
+
+  // Admin Tasks (Quiz)
+  async getAdminTasks() { return this.request('/admin/tasks'); }
+  async createAdminTask(data) { return this.request('/admin/tasks', { method: 'POST', body: data }); }
+  async updateAdminTask(id, data) { return this.request(`/admin/tasks/${id}`, { method: 'PUT', body: data }); }
+  async deleteAdminTask(id) { return this.request(`/admin/tasks/${id}`, { method: 'DELETE' }); }
 }
 
 export default new ApiService();
