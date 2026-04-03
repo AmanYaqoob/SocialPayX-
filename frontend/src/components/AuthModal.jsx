@@ -88,7 +88,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login", initialReferralCode
       let response;
       if (mode === "login") {
         response = await apiService.login(formData.email, formData.password);
-        login(response.user, response.token);
+        login(response.user, response.token, true);
         onClose();
         navigate("/dashboard");
       } else {
