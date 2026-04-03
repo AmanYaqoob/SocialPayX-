@@ -28,6 +28,7 @@ import AdminMining from "./pages/admin/AdminMining.jsx";
 import AdminWithdrawals from "./pages/admin/AdminWithdrawals.jsx";
 import AdminSettings from "./pages/admin/AdminSettings.jsx";
 import AdminNews from "./pages/admin/AdminNews.jsx";
+import AdminTasks from "./pages/admin/AdminTasks.jsx";
 
 const queryClient = new QueryClient();
 
@@ -107,6 +108,7 @@ const App = () => {
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/news" element={<AdminNews />} />
+              <Route path="/admin/tasks" element={<AdminTasks />} />
               <Route path="/admin/kyc" element={<AdminKYC />} />
               <Route path="/admin/mining" element={<AdminMining />} />
               <Route path="/admin/withdrawals" element={<AdminWithdrawals />} />
