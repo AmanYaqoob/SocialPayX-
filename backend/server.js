@@ -16,6 +16,7 @@ import adminRoutes from './routes/admin.js';
 import newsRoutes from './routes/news.js';
 import tasksRoutes from './routes/tasks.js';
 import feedRoutes from './routes/feed.js';
+import adminTasksRoutes from './routes/adminTasks.js';
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/feed', feedRoutes);
+app.use('/api/admin/tasks', adminTasksRoutes);
 
 app.use((err, req, res, next) => {
   console.error('Error:', err.stack);
