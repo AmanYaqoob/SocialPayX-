@@ -354,6 +354,27 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Whitepaper Banner */}
+      <div className="px-4 mb-6">
+        <a
+          href="/whitepaper"
+          className="flex items-center gap-4 p-4 bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/30 rounded-2xl hover:border-primary/60 hover:bg-primary/10 transition-all"
+        >
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center flex-shrink-0">
+            <svg viewBox="0 0 24 24" className="w-5 h-5 text-primary" fill="currentColor">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/>
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-foreground leading-none mb-0.5">SocialPay X Whitepaper</p>
+            <p className="text-xs text-muted-foreground">Learn about our vision, tokenomics & roadmap</p>
+          </div>
+          <svg viewBox="0 0 24 24" className="w-4 h-4 text-primary flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </a>
+      </div>
+
       <BottomNav />
 
       {/* App Download Popup */}
