@@ -1,85 +1,10 @@
 import { useState, useContext, useEffect } from "react";
-import { Play, Twitter, Gift, ChevronRight, CheckCircle, Loader2, Youtube, Instagram, Send, HelpCircle, Bitcoin, Coins } from "lucide-react";
+import { Play, Twitter, Gift, ChevronRight, CheckCircle, Loader2, Instagram, Send, HelpCircle, Bitcoin, Coins, ExternalLink } from "lucide-react";
 import { AuthContext } from "../App.jsx";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../components/BottomNav.jsx";
 import { useToast } from "@/hooks/use-toast";
 import apiService from "../services/api.js";
-
-const QUIZ_QUESTIONS = [
-  {
-    id: "quiz_what_is_spx",
-    question: "What is SocialPayX (SPX)?",
-    options: [
-      "A social media platform",
-      "A crypto mining & rewards ecosystem",
-      "A stock trading app",
-      "A banking service",
-    ],
-    correct: 1,
-    reward: 20,
-  },
-  {
-    id: "quiz_what_is_blockchain",
-    question: "What is a blockchain?",
-    options: [
-      "A type of social media",
-      "A government database",
-      "A decentralized, distributed digital ledger",
-      "A cloud storage service",
-    ],
-    correct: 2,
-    reward: 15,
-  },
-  {
-    id: "quiz_spx_earn",
-    question: "How do you earn SPX on SocialPayX?",
-    options: [
-      "By buying it only",
-      "Mining, referrals, tasks & daily bonuses",
-      "Watching movies",
-      "Playing video games",
-    ],
-    correct: 1,
-    reward: 20,
-  },
-  {
-    id: "quiz_what_is_bitcoin",
-    question: "Who created Bitcoin?",
-    options: [
-      "Elon Musk",
-      "Mark Zuckerberg",
-      "Satoshi Nakamoto",
-      "Vitalik Buterin",
-    ],
-    correct: 2,
-    reward: 15,
-  },
-  {
-    id: "quiz_spx_referral",
-    question: "What happens when you refer a friend on SocialPayX?",
-    options: [
-      "Nothing",
-      "Your friend loses coins",
-      "You earn a referral bonus and mining rate boost",
-      "You get banned",
-    ],
-    correct: 2,
-    reward: 20,
-  },
-  {
-    id: "quiz_what_is_wallet",
-    question: "What is a crypto wallet used for?",
-    options: [
-      "Storing physical cash",
-      "Storing and managing crypto assets",
-      "Sending emails",
-      "Social networking",
-    ],
-    correct: 1,
-    reward: 15,
-  },
-];
 
 const Tasks = () => {
   const { isAuthenticated } = useContext(AuthContext);
@@ -93,6 +18,8 @@ const Tasks = () => {
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [quizResult, setQuizResult] = useState(null);
+  const [allTasks, setAllTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isAuthenticated) { navigate("/"); return; }
@@ -100,16 +27,32 @@ const Tasks = () => {
       .then((data) => {
         setCompletedTasks(data.completedTasks || []);
         setDailyBonusClaimed(data.dailyBonusClaimed || false);
+        setAllTasks(data.tasks || []);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [isAuthenticated, navigate]);
 
-  const socialTasks = [
-    { id: "twitter",   icon: Twitter,   name: "Follow us on X (Twitter)", reward: 10, url: "https://twitter.com/socialpayx" },
-    { id: "telegram",  icon: Send,      name: "Join our Telegram",         reward: 15, url: "https://t.me/socialpayx" },
-    { id: "instagram", icon: Instagram, name: "Follow on Instagram",       reward: 10, url: "https://instagram.com/socialpayx" },
-    { id: "youtube",   icon: Youtube,   name: "Subscribe on YouTube",      reward: 20, url: "https://youtube.com/@socialpayx" },
-  ];
+  // Split tasks by category
+  const socialTasks = allTasks.filter(t => t.category === "social");
+  const quizTasks   = allTasks.filter(t => t.category === "quiz");
+
+  // Social icon map
+  const getSocialIcon = (taskId = "") => {
+    const id = taskId.toLowerCase();
+    if (id.includes("twitter") || id.includes("x_")) return Twitter;
+    if (id.includes("instagram"))                      return Instagram;
+    if (id.includes("telegram"))                       return Send;
+    return ExternalLink;
+  };
+
+  const getSocialColor = (taskId = "") => {
+    const id = taskId.toLowerCase();
+    if (id.includes("twitter") || id.includes("x_")) return { bg: "bg-blue-500/20",  icon: "text-blue-400" };
+    if (id.includes("instagram"))                      return { bg: "bg-pink-500/20",  icon: "text-pink-400" };
+    if (id.includes("telegram"))                       return { bg: "bg-sky-500/20",   icon: "text-sky-400" };
+    return                                                    { bg: "bg-primary/20",   icon: "text-primary" };
+  };
 
   const completeTask = async (taskId, url) => {
     if (completedTasks.includes(taskId) || loadingTask) return;
@@ -130,8 +73,11 @@ const Tasks = () => {
   };
 
   const openQuiz = (quiz) => {
-    if (completedTasks.includes(quiz.id)) return;
-    setActiveQuiz(quiz);
+    if (completedTasks.includes(quiz.taskId)) return;
+    // Build options array + find correct index
+    const options = quiz.options || [];
+    const correctIndex = options.indexOf(quiz.correctAnswer);
+    setActiveQuiz({ ...quiz, id: quiz.taskId, options, correct: correctIndex });
     setSelectedAnswer(null);
     setQuizResult(null);
   };
@@ -173,9 +119,7 @@ const Tasks = () => {
     }
   };
 
-  const totalPossible = socialTasks.reduce((s, t) => s + t.reward, 0)
-    + QUIZ_QUESTIONS.reduce((s, q) => s + q.reward, 0)
-    + 50;
+  const totalPossible = allTasks.reduce((s, t) => s + t.reward, 0) + 5;
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -253,106 +197,104 @@ const Tasks = () => {
         </div>
       </div>
 
-      {/* Video Rewards */}
-      <div className="px-4 mb-6">
-        <div className="bg-card border border-border rounded-2xl p-6">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-              <Play className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground">Video Rewards</h3>
-              <p className="text-sm text-muted-foreground">Earn up to 500 SPX</p>
-            </div>
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+      ) : allTasks.length === 0 ? (
+        <div className="px-4 mb-6">
+          <div className="bg-card border border-border rounded-2xl p-8 text-center">
+            <HelpCircle className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground text-sm">No tasks available right now. Check back soon!</p>
           </div>
-          <button className="w-full py-3 btn-gradient rounded-xl font-medium text-foreground btn-glow">
-            Win up to 500 SPX Daily
-          </button>
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Social Tasks */}
+          {socialTasks.length > 0 && (
+            <div className="px-4 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-foreground">Follow Our Socials</h3>
+                <span className="text-xs text-muted-foreground">
+                  {socialTasks.filter(t => completedTasks.includes(t.taskId)).length}/{socialTasks.length} done
+                </span>
+              </div>
+              <div className="space-y-3">
+                {socialTasks.map((task) => {
+                  const Icon = getSocialIcon(task.taskId);
+                  const colors = getSocialColor(task.taskId);
+                  const isCompleted = completedTasks.includes(task.taskId);
+                  const isLoading = loadingTask === task.taskId;
+                  return (
+                    <button
+                      key={task.taskId}
+                      onClick={() => completeTask(task.taskId, task.url)}
+                      disabled={isCompleted || !!loadingTask}
+                      className={`w-full bg-card border rounded-xl p-4 flex items-center justify-between transition-all ${
+                        isCompleted ? "border-green-500/50 opacity-75" : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${colors.bg}`}>
+                          <Icon className={`w-5 h-5 ${colors.icon}`} />
+                        </div>
+                        <span className="font-medium text-foreground text-sm">{task.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isLoading ? <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                        : isCompleted ? <CheckCircle className="w-5 h-5 text-green-500" />
+                        : <><span className="text-primary font-semibold">+{task.reward}</span><ChevronRight className="w-4 h-4 text-muted-foreground" /></>}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-      {/* Social Tasks */}
-      <div className="px-4 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-foreground">Follow Our Socials</h3>
-          <span className="text-xs text-muted-foreground">{socialTasks.filter(t => completedTasks.includes(t.id)).length}/{socialTasks.length} done</span>
-        </div>
-        <div className="space-y-3">
-          {socialTasks.map((task) => {
-            const Icon = task.icon;
-            const isCompleted = completedTasks.includes(task.id);
-            const isLoading = loadingTask === task.id;
-            return (
-              <button
-                key={task.id}
-                onClick={() => completeTask(task.id, task.url)}
-                disabled={isCompleted || !!loadingTask}
-                className={`w-full bg-card border rounded-xl p-4 flex items-center justify-between transition-all ${
-                  isCompleted ? "border-green-500/50 opacity-75" : "border-border hover:border-primary/50"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    task.id === "twitter"   ? "bg-blue-500/20"  :
-                    task.id === "youtube"   ? "bg-red-500/20"   :
-                    task.id === "instagram" ? "bg-pink-500/20"  : "bg-primary/20"
-                  }`}>
-                    <Icon className={`w-5 h-5 ${
-                      task.id === "twitter"   ? "text-blue-400"  :
-                      task.id === "youtube"   ? "text-red-400"   :
-                      task.id === "instagram" ? "text-pink-400"  : "text-primary"
-                    }`} />
-                  </div>
-                  <span className="font-medium text-foreground text-sm">{task.name}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {isLoading ? <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                  : isCompleted ? <CheckCircle className="w-5 h-5 text-green-500" />
-                  : <><span className="text-primary font-semibold">+{task.reward}</span><ChevronRight className="w-4 h-4 text-muted-foreground" /></>}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Quiz Tasks */}
-      <div className="px-4 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-foreground">Quiz — Earn SPX</h3>
-          <span className="text-xs text-muted-foreground">{QUIZ_QUESTIONS.filter(q => completedTasks.includes(q.id)).length}/{QUIZ_QUESTIONS.length} done</span>
-        </div>
-        <div className="space-y-3">
-          {QUIZ_QUESTIONS.map((quiz) => {
-            const isCompleted = completedTasks.includes(quiz.id);
-            const Icon = ["quiz_what_is_bitcoin","quiz_what_is_blockchain","quiz_what_is_wallet"].includes(quiz.id) ? Bitcoin : Coins;
-            return (
-              <button
-                key={quiz.id}
-                onClick={() => openQuiz(quiz)}
-                disabled={isCompleted}
-                className={`w-full bg-card border rounded-xl p-4 flex items-center justify-between transition-all ${
-                  isCompleted ? "border-green-500/50 opacity-75" : "border-border hover:border-primary/50"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-accent" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-medium text-foreground text-sm">{quiz.question}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">4 options • Tap to answer</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0 ml-2">
-                  {isCompleted ? <CheckCircle className="w-5 h-5 text-green-500" />
-                  : <><span className="text-accent font-semibold">+{quiz.reward}</span><ChevronRight className="w-4 h-4 text-muted-foreground" /></>}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+          {/* Quiz Tasks */}
+          {quizTasks.length > 0 && (
+            <div className="px-4 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-foreground">Quiz — Earn SPX</h3>
+                <span className="text-xs text-muted-foreground">
+                  {quizTasks.filter(q => completedTasks.includes(q.taskId)).length}/{quizTasks.length} done
+                </span>
+              </div>
+              <div className="space-y-3">
+                {quizTasks.map((quiz) => {
+                  const isCompleted = completedTasks.includes(quiz.taskId);
+                  const Icon = Coins;
+                  return (
+                    <button
+                      key={quiz.taskId}
+                      onClick={() => openQuiz(quiz)}
+                      disabled={isCompleted}
+                      className={`w-full bg-card border rounded-xl p-4 flex items-center justify-between transition-all ${
+                        isCompleted ? "border-green-500/50 opacity-75" : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                          <Icon className="w-5 h-5 text-accent" />
+                        </div>
+                        <div className="text-left">
+                          <p className="font-medium text-foreground text-sm">{quiz.question || quiz.name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">4 options • Tap to answer</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        {isCompleted ? <CheckCircle className="w-5 h-5 text-green-500" />
+                        : <><span className="text-accent font-semibold">+{quiz.reward}</span><ChevronRight className="w-4 h-4 text-muted-foreground" /></>}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Daily Bonus */}
       <div className="px-4">
@@ -369,7 +311,7 @@ const Tasks = () => {
           : dailyBonusClaimed ? <CheckCircle className="w-5 h-5 text-green-500" />
           : <Gift className="w-5 h-5 text-accent" />}
           <span className="font-semibold text-foreground">
-            {dailyBonusClaimed ? "Daily Bonus Claimed ✓" : "Daily Bonus +50"}
+            {dailyBonusClaimed ? "Daily Bonus Claimed ✓" : "Daily Bonus +5"}
           </span>
           {!dailyBonusClaimed && <span className="text-xs text-muted-foreground">SPX</span>}
         </button>
