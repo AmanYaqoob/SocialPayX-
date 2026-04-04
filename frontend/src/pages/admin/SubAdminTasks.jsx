@@ -2,7 +2,25 @@ import { useState, useEffect } from "react";
 import { Plus, Edit, Trash2, CheckCircle, XCircle, HelpCircle } from "lucide-react";
 import SubAdminLayout from "../../components/SubAdminLayout.jsx";
 import { useToast } from "@/hooks/use-toast";
-import apiService from "../../services/api.js";
+
+const API_BASE = import.meta.env.VITE_API_URL || 'https://socialpayx.com/api';
+const getToken = () => localStorage.getItem("subadmin_token") || localStorage.getItem("token");
+
+const apiFetch = async (path, options = {}) => {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Request failed');
+  return data;
+};
 
 const defaultForm = {
   taskId: "",
@@ -16,11 +34,8 @@ const defaultForm = {
   url: ""
 };
 
-const getToken = () => localStorage.getItem("subadmin_token") || localStorage.getItem("token");
-
 const SubAdminTasks = () => {
   const { toast } = useToast();
-  useEffect(() => { apiService.setToken(getToken()); }, []);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -32,7 +47,7 @@ const SubAdminTasks = () => {
 
   const loadTasks = async () => {
     try {
-      const data = await apiService.getAdminTasks();
+      const data = await apiFetch('/admin/tasks');
       setTasks(data.tasks || []);
     } catch (error) {
       toast({ title: "Error", description: "Failed to load tasks", variant: "destructive" });
@@ -51,10 +66,10 @@ const SubAdminTasks = () => {
     const payload = { ...formData, options: filledOptions };
     try {
       if (editingTask) {
-        await apiService.updateAdminTask(editingTask._id, payload);
+        await apiFetch(`/admin/tasks/${editingTask._id}`, { method: 'PUT', body: payload });
         toast({ title: "Success", description: "Task updated successfully" });
       } else {
-        await apiService.createAdminTask(payload);
+        await apiFetch('/admin/tasks', { method: 'POST', body: payload });
         toast({ title: "Success", description: "Task created successfully" });
       }
       setShowModal(false);
@@ -67,7 +82,7 @@ const SubAdminTasks = () => {
 
   const handleDelete = async (id) => {
     try {
-      await apiService.deleteAdminTask(id);
+      await apiFetch(`/admin/tasks/${id}`, { method: 'DELETE' });
       toast({ title: "Success", description: "Task deleted successfully" });
       setDeleteConfirm(null);
       loadTasks();
