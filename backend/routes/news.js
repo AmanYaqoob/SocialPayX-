@@ -1,6 +1,6 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { auth, adminAuth } from '../middleware/auth.js';
+import { auth, subAdminAuth, subAdminAuth } from '../middleware/auth.js';
 import News from '../models/News.js';
 
 const router = express.Router();
@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
 });
 
 // Admin: Get all news (including unpublished) — MUST be before /:id
-router.get('/admin/all', adminAuth, async (req, res) => {
+router.get('/admin/all', subAdminAuth, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -86,7 +86,7 @@ router.get('/:id', async (req, res) => {
 
 // Admin: Create news
 router.post('/', [
-  adminAuth,
+  subAdminAuth,
   body('title').notEmpty().trim(),
   body('content').notEmpty().trim(),
   body('category').optional().isIn(['announcement', 'update', 'maintenance', 'promotion', 'general']),
@@ -119,7 +119,7 @@ router.post('/', [
 
 // Admin: Update news
 router.put('/:id', [
-  adminAuth,
+  subAdminAuth,
   body('title').optional().trim(),
   body('content').optional().trim()
 ], async (req, res) => {
@@ -146,7 +146,7 @@ router.put('/:id', [
 });
 
 // Admin: Delete news
-router.delete('/:id', adminAuth, async (req, res) => {
+router.delete('/:id', subAdminAuth, async (req, res) => {
   try {
     const news = await News.findByIdAndDelete(req.params.id);
     
