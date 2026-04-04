@@ -2,15 +2,28 @@ import { useState, useEffect } from "react";
 import { Plus, Edit, Trash2, Eye, EyeOff } from "lucide-react";
 import SubAdminLayout from "../../components/SubAdminLayout.jsx";
 import { useToast } from "@/hooks/use-toast";
-import apiService from "../../services/api.js";
 
-// Use subadmin token for all requests in this page
+const API_BASE = import.meta.env.VITE_API_URL || 'https://socialpayx.com/api';
 const getToken = () => localStorage.getItem("subadmin_token") || localStorage.getItem("token");
+
+const apiFetch = async (path, options = {}) => {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Request failed');
+  return data;
+};
 
 const SubAdminNews = () => {
   const { toast } = useToast();
-  // Ensure subadmin token is used
-  useEffect(() => { apiService.setToken(getToken()); }, []);
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -30,14 +43,10 @@ const SubAdminNews = () => {
 
   const loadNews = async () => {
     try {
-      const data = await apiService.getAllNews();
+      const data = await apiFetch('/news/admin/all');
       setNews(data.news || []);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load news",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Failed to load news", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -47,36 +56,28 @@ const SubAdminNews = () => {
     e.preventDefault();
     try {
       if (editingNews) {
-        await apiService.updateNews(editingNews._id, formData);
+        await apiFetch(`/news/${editingNews._id}`, { method: 'PUT', body: formData });
         toast({ title: "Success", description: "News updated successfully" });
       } else {
-        await apiService.createNews(formData);
+        await apiFetch('/news', { method: 'POST', body: formData });
         toast({ title: "Success", description: "News created successfully" });
       }
       setShowModal(false);
       resetForm();
       loadNews();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this news?")) return;
     try {
-      await apiService.deleteNews(id);
+      await apiFetch(`/news/${id}`, { method: 'DELETE' });
       toast({ title: "Success", description: "News deleted successfully" });
       loadNews();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete news",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Failed to delete news", variant: "destructive" });
     }
   };
 
