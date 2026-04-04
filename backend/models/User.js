@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   isActive: { type: Boolean, default: true },
   isAdmin: { type: Boolean, default: false },
+  isSubAdmin: { type: Boolean, default: false },
   isEmailVerified: { type: Boolean, default: false },
   emailVerificationCode: { type: String },
   emailVerificationExpires: { type: Date },
