@@ -1,6 +1,6 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { auth, subAdminAuth, subAdminAuth } from '../middleware/auth.js';
+import { auth, subAdminAuth } from '../middleware/auth.js';
 import News from '../models/News.js';
 
 const router = express.Router();
