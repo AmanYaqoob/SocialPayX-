@@ -44,11 +44,11 @@ app.use('/api/mining', miningRoutes);
 app.use('/api/kyc', kycRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/referral', referralRoutes);
+app.use('/api/admin/tasks', adminTasksRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/feed', feedRoutes);
-app.use('/api/admin/tasks', adminTasksRoutes);
 
 app.use((err, req, res, next) => {
   console.error('Error:', err.stack);
