@@ -21,6 +21,10 @@ import Tasks from "./pages/Tasks.jsx";
 import SocialFeed from "./pages/SocialFeed.jsx";
 // Admin imports
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
+// Sub-Admin imports
+import SubAdminLogin from "./pages/admin/SubAdminLogin.jsx";
+import SubAdminNews from "./pages/admin/SubAdminNews.jsx";
+import SubAdminTasks from "./pages/admin/SubAdminTasks.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import AdminUsers from "./pages/admin/AdminUsers.jsx";
 import AdminKYC from "./pages/admin/AdminKYC.jsx";
@@ -115,6 +119,11 @@ const App = () => {
               <Route path="/admin/settings" element={<AdminSettings />} />
 
               <Route path="*" element={<NotFound />} />
+
+              {/* Sub-Admin Routes */}
+              <Route path="/subadmin/login" element={<SubAdminLogin />} />
+              <Route path="/subadmin/news" element={<SubAdminNews />} />
+              <Route path="/subadmin/tasks" element={<SubAdminTasks />} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
