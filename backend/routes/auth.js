@@ -126,6 +126,7 @@ router.post('/login', [
         spxBalance: user.spxBalance,
         kycStatus: user.kycStatus,
         isAdmin: user.isAdmin,
+        isSubAdmin: user.isSubAdmin || false,
         referralCode: user.referralCode,
         isEmailVerified: user.isEmailVerified
       }
