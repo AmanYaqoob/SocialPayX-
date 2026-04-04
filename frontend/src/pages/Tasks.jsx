@@ -1,5 +1,5 @@
 import { useState, useContext, useEffect } from "react";
-import { Play, Twitter, Gift, ChevronRight, CheckCircle, Loader2, Instagram, Send, HelpCircle, Bitcoin, Coins, ExternalLink } from "lucide-react";
+import { Play, Twitter, Gift, ChevronRight, CheckCircle, XCircle, Loader2, Instagram, Send, HelpCircle, Bitcoin, Coins, ExternalLink } from "lucide-react";
 import { AuthContext } from "../App.jsx";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../components/BottomNav.jsx";
@@ -20,6 +20,7 @@ const Tasks = () => {
   const [quizResult, setQuizResult] = useState(null);
   const [allTasks, setAllTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [failedTasks, setFailedTasks] = useState([]);
 
   useEffect(() => {
     if (!isAuthenticated) { navigate("/"); return; }
@@ -74,6 +75,7 @@ const Tasks = () => {
 
   const openQuiz = (quiz) => {
     if (completedTasks.includes(quiz.taskId)) return;
+    if (failedTasks.includes(quiz.taskId)) return;
     // Build options array + find correct index
     const options = quiz.options || [];
     const correctIndex = options.indexOf(quiz.correctAnswer);
@@ -102,6 +104,10 @@ const Tasks = () => {
       } finally {
         setLoadingTask(null);
       }
+    } else {
+      // Wrong — mark as failed permanently, close modal after short delay
+      setFailedTasks((prev) => [...prev, activeQuiz.id]);
+      setTimeout(() => setActiveQuiz(null), 1800);
     }
   };
 
@@ -264,27 +270,33 @@ const Tasks = () => {
               <div className="space-y-3">
                 {quizTasks.map((quiz) => {
                   const isCompleted = completedTasks.includes(quiz.taskId);
+                  const isFailed = failedTasks.includes(quiz.taskId);
                   const Icon = Coins;
                   return (
                     <button
                       key={quiz.taskId}
                       onClick={() => openQuiz(quiz)}
-                      disabled={isCompleted}
+                      disabled={isCompleted || isFailed}
                       className={`w-full bg-card border rounded-xl p-4 flex items-center justify-between transition-all ${
-                        isCompleted ? "border-green-500/50 opacity-75" : "border-border hover:border-primary/50"
+                        isCompleted ? "border-green-500/50 opacity-75" :
+                        isFailed    ? "border-red-500/50 opacity-75 cursor-not-allowed" :
+                                      "border-border hover:border-primary/50"
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
-                          <Icon className="w-5 h-5 text-accent" />
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isFailed ? "bg-red-500/20" : "bg-accent/20"}`}>
+                          <Icon className={`w-5 h-5 ${isFailed ? "text-red-400" : "text-accent"}`} />
                         </div>
                         <div className="text-left">
                           <p className="font-medium text-foreground text-sm">{quiz.question || quiz.name}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">4 options • Tap to answer</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {isFailed ? "Failed — no more attempts" : "4 options • Tap to answer"}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-2">
                         {isCompleted ? <CheckCircle className="w-5 h-5 text-green-500" />
+                        : isFailed   ? <XCircle className="w-5 h-5 text-red-500" />
                         : <><span className="text-accent font-semibold">+{quiz.reward}</span><ChevronRight className="w-4 h-4 text-muted-foreground" /></>}
                       </div>
                     </button>
