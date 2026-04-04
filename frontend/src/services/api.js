@@ -3,6 +3,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://socialpayx.com/api
 class ApiService {
   constructor() {
     this.token = null;
+    this._manualToken = null;
     this.updateToken();
   }
 
@@ -10,16 +11,27 @@ class ApiService {
     this.token = localStorage.getItem('token') || sessionStorage.getItem('token');
   }
 
-  setToken(token) { this.token = token; }
+  setToken(token) {
+    this.token = token;
+    this._manualToken = token; // flag: don't auto-override this
+  }
+
+  clearManualToken() {
+    this._manualToken = null;
+  }
 
   removeToken() {
     this.token = null;
+    this._manualToken = null;
     localStorage.removeItem('token');
     sessionStorage.removeItem('token');
   }
 
   async request(endpoint, options = {}) {
-    this.updateToken();
+    // Only auto-update token if no manual token (e.g. subadmin_token) was set
+    if (!this._manualToken) {
+      this.updateToken();
+    }
     const url = `${API_BASE_URL}${endpoint}`;
     const config = {
       headers: {
