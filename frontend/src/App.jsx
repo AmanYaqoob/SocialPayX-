@@ -100,6 +100,7 @@ const App = () => {
               <Route path="/whitepaper" element={<Whitepaper />} />
               <Route path="/reels" element={<Reels />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/profile/:userId" element={<Profile />} />
               <Route path="/verify-email" element={<EmailVerification />} />
               <Route path="/news" element={<News />} />
               <Route path="/news/:id" element={<NewsDetail />} />
