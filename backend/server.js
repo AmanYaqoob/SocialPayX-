@@ -6,17 +6,18 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import morgan from 'morgan';
 
-import authRoutes from './routes/auth.js';
-import userRoutes from './routes/user.js';
-import miningRoutes from './routes/mining.js';
-import kycRoutes from './routes/kyc.js';
-import walletRoutes from './routes/wallet.js';
-import referralRoutes from './routes/referral.js';
-import adminRoutes from './routes/admin.js';
-import newsRoutes from './routes/news.js';
-import tasksRoutes from './routes/tasks.js';
-import feedRoutes from './routes/feed.js';
+import authRoutes      from './routes/auth.js';
+import userRoutes      from './routes/user.js';
+import miningRoutes    from './routes/mining.js';
+import kycRoutes       from './routes/kyc.js';
+import walletRoutes    from './routes/wallet.js';
+import referralRoutes  from './routes/referral.js';
+import adminRoutes     from './routes/admin.js';
+import newsRoutes      from './routes/news.js';
+import tasksRoutes     from './routes/tasks.js';
+import feedRoutes      from './routes/feed.js';
 import adminTasksRoutes from './routes/adminTasks.js';
+import uploadRoutes    from './routes/upload.js';
 
 dotenv.config();
 
@@ -35,20 +36,22 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+// Increased to 100mb to handle video/image uploads as base64
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
-app.use('/api/auth', authRoutes);
-app.use('/api/user', userRoutes);
-app.use('/api/mining', miningRoutes);
-app.use('/api/kyc', kycRoutes);
-app.use('/api/wallet', walletRoutes);
-app.use('/api/referral', referralRoutes);
+app.use('/api/auth',        authRoutes);
+app.use('/api/user',        userRoutes);
+app.use('/api/mining',      miningRoutes);
+app.use('/api/kyc',         kycRoutes);
+app.use('/api/wallet',      walletRoutes);
+app.use('/api/referral',    referralRoutes);
 app.use('/api/admin/tasks', adminTasksRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/news', newsRoutes);
-app.use('/api/tasks', tasksRoutes);
-app.use('/api/feed', feedRoutes);
+app.use('/api/admin',       adminRoutes);
+app.use('/api/news',        newsRoutes);
+app.use('/api/tasks',       tasksRoutes);
+app.use('/api/feed',        feedRoutes);
+app.use('/api/upload',      uploadRoutes);
 
 app.use((err, req, res, next) => {
   console.error('Error:', err.stack);
