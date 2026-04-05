@@ -48,22 +48,35 @@ const App = () => {
       localStorage.getItem("token") || sessionStorage.getItem("token");
     if (token) {
       apiService.setToken(token);
-      setIsAuthenticated(true);
+      apiService.getProfile()
+        .then(profile => {
+          setUser(profile);
+          setIsAuthenticated(true);
+          // Migrate any sessionStorage token to localStorage for persistence
+          if (!localStorage.getItem("token")) {
+            localStorage.setItem("token", token);
+            sessionStorage.removeItem("token");
+          }
+        })
+        .catch(() => {
+          // Token expired or invalid — clear everything so user sees login
+          apiService.removeToken();
+          localStorage.removeItem("token");
+          sessionStorage.removeItem("token");
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
-  const login = (userData, token, rememberMe = false) => {
+  const login = (userData, token, rememberMe = true) => {
     setUser(userData);
     setIsAuthenticated(true);
     apiService.setToken(token);
-    if (rememberMe) {
-      localStorage.setItem("token", token);
-      sessionStorage.removeItem("token");
-    } else {
-      sessionStorage.setItem("token", token);
-      localStorage.removeItem("token");
-    }
+    // Always save to localStorage so login survives tab/browser close
+    localStorage.setItem("token", token);
+    sessionStorage.removeItem("token");
   };
 
   const logout = () => {
