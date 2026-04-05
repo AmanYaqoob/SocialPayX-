@@ -7,8 +7,12 @@ const router = express.Router();
 
 function formatPost(post, userId) {
   const obj = post.toObject ? post.toObject() : post;
+  const mediaUrl  = obj.mediaUrl  || obj.imageUrl  || null;
+  const mediaType = obj.mediaType || (obj.imageUrl ? 'image' : null);
   return {
     ...obj,
+    mediaUrl,
+    mediaType,
     likeCount:    obj.likes?.length ?? 0,
     commentCount: obj.comments?.length ?? 0,
     liked:        userId ? obj.likes?.some(id => id.toString() === userId.toString()) : false,
@@ -29,12 +33,18 @@ router.get('/', auth, async (req, res) => {
       .lean();
 
     const userId = req.user._id.toString();
-    const formatted = posts.map(p => ({
-      ...p,
-      likeCount:    p.likes?.length ?? 0,
-      commentCount: p.comments?.length ?? 0,
-      liked:        p.likes?.some(id => id.toString() === userId) ?? false,
-    }));
+    const formatted = posts.map(p => {
+      const mediaUrl  = p.mediaUrl  || p.imageUrl  || null;
+      const mediaType = p.mediaType || (p.imageUrl ? 'image' : null);
+      return {
+        ...p,
+        mediaUrl,
+        mediaType,
+        likeCount:    p.likes?.length ?? 0,
+        commentCount: p.comments?.length ?? 0,
+        liked:        p.likes?.some(id => id.toString() === userId) ?? false,
+      };
+    });
 
     const total = await SocialPost.countDocuments();
     res.json({
@@ -48,16 +58,27 @@ router.get('/', auth, async (req, res) => {
 
 // POST /api/feed
 router.post('/',
-  [auth, body('content').optional().isString().isLength({ max: 1000 }), body('imageUrl').optional({ nullable: true }).isString()],
+  [
+    auth,
+    body('content').optional().isString().isLength({ max: 1000 }),
+    body('mediaUrl').optional({ nullable: true }).isString(),
+    body('mediaType').optional({ nullable: true }).isIn(['image', 'video', null]),
+  ],
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
     try {
-      const { content = '', imageUrl = null } = req.body;
-      if (!content.trim() && !imageUrl) return res.status(400).json({ message: 'Post must have text or an image.' });
-      if (imageUrl && imageUrl.startsWith('data:video')) return res.status(400).json({ message: 'Videos are not allowed. Images only.' });
+      const { content = '', mediaUrl = null, mediaType = null } = req.body;
+      if (!content.trim() && !mediaUrl)
+        return res.status(400).json({ message: 'Post must have text or media.' });
 
-      const post = new SocialPost({ userId: req.user._id, username: req.user.username, content: content.trim(), imageUrl });
+      const post = new SocialPost({
+        userId:   req.user._id,
+        username: req.user.username,
+        content:  content.trim(),
+        mediaUrl,
+        mediaType,
+      });
       await post.save();
       res.status(201).json({ message: 'Post created!', post: formatPost(post, req.user._id) });
     } catch (error) {
@@ -65,6 +86,21 @@ router.post('/',
     }
   }
 );
+
+// POST /api/feed/:id/view — increment view count (fires when video plays or post is opened)
+router.post('/:id/view', auth, async (req, res) => {
+  try {
+    const post = await SocialPost.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { views: 1 } },
+      { new: true }
+    );
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    res.json({ views: post.views });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
 
 // POST /api/feed/:id/like
 router.post('/:id/like', auth, async (req, res) => {
@@ -75,7 +111,7 @@ router.post('/:id/like', auth, async (req, res) => {
     const idx = post.likes.findIndex(id => id.toString() === userId);
     let liked;
     if (idx === -1) { post.likes.push(req.user._id); liked = true; }
-    else { post.likes.splice(idx, 1); liked = false; }
+    else            { post.likes.splice(idx, 1);      liked = false; }
     await post.save();
     res.json({ liked, likeCount: post.likes.length });
   } catch (error) {
@@ -117,7 +153,11 @@ router.get('/:id/comments', auth, async (req, res) => {
 // POST /api/feed/:id/share
 router.post('/:id/share', auth, async (req, res) => {
   try {
-    const post = await SocialPost.findByIdAndUpdate(req.params.id, { $inc: { shares: 1 } }, { new: true });
+    const post = await SocialPost.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { shares: 1 } },
+      { new: true }
+    );
     if (!post) return res.status(404).json({ message: 'Post not found' });
     res.json({ shares: post.shares });
   } catch (error) {
@@ -131,7 +171,7 @@ router.delete('/:id', auth, async (req, res) => {
     const post = await SocialPost.findById(req.params.id);
     if (!post) return res.status(404).json({ message: 'Post not found' });
     const isOwner = post.userId.toString() === req.user._id.toString();
-    if (!isOwner && !req.user.isAdmin) return res.status(403).json({ message: 'Not authorized to delete this post' });
+    if (!isOwner && !req.user.isAdmin) return res.status(403).json({ message: 'Not authorized' });
     await post.deleteOne();
     res.json({ message: 'Post deleted' });
   } catch (error) {
