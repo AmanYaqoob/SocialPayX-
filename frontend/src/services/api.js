@@ -54,9 +54,13 @@ class ApiService {
   async resetPassword(token, password)            { return this.request('/auth/reset-password', { method: 'POST', body: { token, password } }); }
 
   // ── User ──────────────────────────────────────────────────────────────────
-  async getProfile()          { return this.request('/user/profile'); }
-  async updateProfile(data)   { return this.request('/user/profile',      { method: 'PUT', body: data }); }
-  async getSocialStats()      { return this.request('/user/social-stats'); }  // ← NEW
+  async getProfile()              { return this.request('/user/profile'); }
+  async updateProfile(data)       { return this.request('/user/profile',               { method: 'PUT', body: data }); }
+  async getSocialStats()          { return this.request('/user/social-stats'); }
+  async followUser(userId)        { return this.request(`/user/${userId}/follow`,       { method: 'POST' }); }
+  async getFollowStatus(userId)   { return this.request(`/user/${userId}/follow-status`); }
+  async getFollowers(userId)      { return this.request(`/user/${userId}/followers`); }
+  async getFollowing(userId)      { return this.request(`/user/${userId}/following`); }
 
   // ── Mining ────────────────────────────────────────────────────────────────
   async startMining()         { return this.request('/mining/start',  { method: 'POST' }); }
