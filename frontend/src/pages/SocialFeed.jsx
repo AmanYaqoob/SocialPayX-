@@ -1,13 +1,15 @@
 import { useState, useContext, useEffect, useRef, useCallback } from "react";
 import {
   Heart, Share2, MessageCircle, Image as ImageIcon, X, Send,
-  MoreHorizontal, ChevronDown, Loader2, Trash2,
+  MoreHorizontal, ChevronDown, Loader2, Trash2, Video, Play, Eye,
 } from "lucide-react";
 import { AuthContext } from "../App.jsx";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "../components/BottomNav.jsx";
 import { useToast } from "@/hooks/use-toast";
 import apiService from "../services/api.js";
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function timeAgo(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -24,6 +26,14 @@ function getInitials(name = "") {
   return name.slice(0, 2).toUpperCase() || "??";
 }
 
+function formatCount(n = 0) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+  if (n >= 1_000)     return (n / 1_000).toFixed(1) + "K";
+  return String(n);
+}
+
+// ── Avatar ───────────────────────────────────────────────────────────────────
+
 const Avatar = ({ username, size = "md" }) => {
   const sz = size === "sm" ? "w-7 h-7 text-xs" : "w-10 h-10 text-sm";
   return (
@@ -32,6 +42,8 @@ const Avatar = ({ username, size = "md" }) => {
     </div>
   );
 };
+
+// ── Comment ──────────────────────────────────────────────────────────────────
 
 const CommentItem = ({ comment }) => (
   <div className="flex gap-2 items-start">
@@ -43,18 +55,74 @@ const CommentItem = ({ comment }) => (
   </div>
 );
 
-const PostCard = ({ post, currentUser, onLike, onShare, onDelete, onComment }) => {
-  const [showComments, setShowComments] = useState(false);
-  const [comments, setComments]         = useState([]);
-  const [commentsLoaded, setCommentsLoaded] = useState(false);
-  const [commentText, setCommentText]   = useState("");
-  const [sendingComment, setSendingComment] = useState(false);
-  const [showMenu, setShowMenu]         = useState(false);
+// ── Video Player with view tracking ──────────────────────────────────────────
+
+const VideoPlayer = ({ src, postId, onView }) => {
+  const videoRef  = useRef(null);
+  const viewFired = useRef(false);
+
+  const handlePlay = () => {
+    if (!viewFired.current) {
+      viewFired.current = true;
+      onView(postId);
+    }
+  };
+
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      controls
+      playsInline
+      preload="metadata"
+      onPlay={handlePlay}
+      className="w-full max-h-96"
+      style={{ display: "block" }}
+    />
+  );
+};
+
+// ── Post Card ─────────────────────────────────────────────────────────────────
+
+const PostCard = ({ post, currentUser, onLike, onShare, onDelete, onComment, onView }) => {
+  const [showComments, setShowComments]       = useState(false);
+  const [comments, setComments]               = useState([]);
+  const [commentsLoaded, setCommentsLoaded]   = useState(false);
+  const [commentText, setCommentText]         = useState("");
+  const [sendingComment, setSendingComment]   = useState(false);
+  const [showMenu, setShowMenu]               = useState(false);
+  const [localViews, setLocalViews]           = useState(post.views ?? 0);
+  const viewFired                             = useRef(false);
   const { toast } = useToast();
 
-  // Support both _id (from profile API) and id (from login response)
   const currentUserId = currentUser?._id?.toString() || currentUser?.id?.toString();
   const isOwn = !!currentUserId && post.userId?.toString() === currentUserId;
+
+  const mediaUrl  = post.mediaUrl  || post.imageUrl  || null;
+  const mediaType = post.mediaType || (post.imageUrl ? "image" : null);
+
+  // Track view when image post is first seen (intersection observer)
+  const cardRef = useRef(null);
+  useEffect(() => {
+    if (mediaType !== "image" || viewFired.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !viewFired.current) {
+          viewFired.current = true;
+          onView(post._id);
+          setLocalViews(v => v + 1);
+        }
+      },
+      { threshold: 0.6 }
+    );
+    if (cardRef.current) observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, [mediaType, post._id, onView]);
+
+  const handleVideoView = (postId) => {
+    onView(postId);
+    setLocalViews(v => v + 1);
+  };
 
   const loadComments = async () => {
     if (commentsLoaded) return;
@@ -91,7 +159,9 @@ const PostCard = ({ post, currentUser, onLike, onShare, onDelete, onComment }) =
   };
 
   return (
-    <div className="bg-card border border-border rounded-2xl overflow-hidden">
+    <div ref={cardRef} className="bg-card border border-border rounded-2xl overflow-hidden">
+
+      {/* Header */}
       <div className="flex items-center justify-between p-4 pb-3">
         <div className="flex items-center gap-3">
           <Avatar username={post.username} />
@@ -101,10 +171,7 @@ const PostCard = ({ post, currentUser, onLike, onShare, onDelete, onComment }) =
           </div>
         </div>
         <div className="relative">
-          <button
-            onClick={() => setShowMenu(v => !v)}
-            className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg"
-          >
+          <button onClick={() => setShowMenu(v => !v)} className="text-muted-foreground hover:text-foreground p-1 rounded-lg">
             <MoreHorizontal className="w-5 h-5" />
           </button>
           {showMenu && (
@@ -128,26 +195,47 @@ const PostCard = ({ post, currentUser, onLike, onShare, onDelete, onComment }) =
         </div>
       </div>
 
+      {/* Text */}
       {post.content && (
         <div className="px-4 pb-3">
           <p className="text-foreground text-sm leading-relaxed">{post.content}</p>
         </div>
       )}
 
-      {post.imageUrl && (
+      {/* Image */}
+      {mediaUrl && mediaType === "image" && (
         <div className="mx-4 mb-3 rounded-xl overflow-hidden border border-border">
-          <img src={post.imageUrl} alt="post" className="w-full object-cover max-h-80" loading="lazy" />
+          <img src={mediaUrl} alt="post" className="w-full object-cover max-h-80" loading="lazy" />
         </div>
       )}
 
+      {/* Video */}
+      {mediaUrl && mediaType === "video" && (
+        <div className="mx-4 mb-3 rounded-xl overflow-hidden border border-border bg-black">
+          <VideoPlayer src={mediaUrl} postId={post._id} onView={handleVideoView} />
+        </div>
+      )}
+
+      {/* Stats row */}
       <div className="px-4 pb-2 flex items-center gap-3 text-xs text-muted-foreground">
-        <span>{post.likeCount ?? post.likes?.length ?? 0} likes</span>
+        <span className="flex items-center gap-1">
+          <Heart className="w-3 h-3" />{formatCount(post.likeCount ?? 0)}
+        </span>
         <span>•</span>
-        <span>{post.commentCount ?? post.comments?.length ?? 0} comments</span>
+        <span className="flex items-center gap-1">
+          <Eye className="w-3 h-3" />{formatCount(localViews)}
+        </span>
         <span>•</span>
-        <span>{post.shares ?? 0} shares</span>
+        <span className="flex items-center gap-1">
+          <MessageCircle className="w-3 h-3" />{formatCount(post.commentCount ?? 0)}
+        </span>
+        <span>•</span>
+        <span className="flex items-center gap-1">
+          <Share2 className="w-3 h-3" />{formatCount(post.shares ?? 0)}
+        </span>
       </div>
 
+      {/* Action buttons */}
       <div className="px-4 py-2 border-t border-border flex items-center justify-between">
         <button
           onClick={() => onLike(post._id)}
@@ -178,6 +266,7 @@ const PostCard = ({ post, currentUser, onLike, onShare, onDelete, onComment }) =
         </button>
       </div>
 
+      {/* Comments section */}
       {showComments && (
         <div className="border-t border-border px-4 py-3 space-y-3">
           {comments.length === 0 && (
@@ -214,50 +303,80 @@ const PostCard = ({ post, currentUser, onLike, onShare, onDelete, onComment }) =
   );
 };
 
-const CreatePost = ({ currentUser, onPosted }) => {
-  const [text, setText]               = useState("");
-  const [imagePreview, setImagePreview] = useState(null);
-  const [imageDataUrl, setImageDataUrl] = useState(null);
-  const [posting, setPosting]         = useState(false);
-  const fileRef                       = useRef();
-  const { toast }                     = useToast();
+// ── Create Post ───────────────────────────────────────────────────────────────
 
-  const handleImage = (e) => {
+const CreatePost = ({ currentUser, onPosted }) => {
+  const [text, setText]           = useState("");
+  const [mediaUrl, setMediaUrl]   = useState(null);
+  const [mediaType, setMediaType] = useState(null);
+  const [preview, setPreview]     = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [posting, setPosting]     = useState(false);
+  const fileRef                   = useRef();
+  const { toast }                 = useToast();
+
+  const handleMedia = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast({ title: "Images only", description: "Videos are not supported.", variant: "destructive" });
+
+    const isVideo = file.type.startsWith("video/");
+    const isImage = file.type.startsWith("image/");
+
+    if (!isVideo && !isImage) {
+      toast({ title: "Invalid file", description: "Only images and videos allowed.", variant: "destructive" });
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "Too large", description: "Image must be under 5MB.", variant: "destructive" });
+
+    const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({ title: "Too large", description: isVideo ? "Max 100MB for videos" : "Max 10MB for images", variant: "destructive" });
       return;
     }
+
+    const localUrl = URL.createObjectURL(file);
+    setPreview({ url: localUrl, type: isVideo ? "video" : "image" });
+    setUploading(true);
+
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      setImagePreview(ev.target.result);
-      setImageDataUrl(ev.target.result);
+    reader.onload = async (ev) => {
+      try {
+        const data = await apiService.request("/upload", {
+          method: "POST",
+          body: { file: ev.target.result, resourceType: isVideo ? "video" : "image" },
+        });
+        setMediaUrl(data.url);
+        setMediaType(data.type);
+        toast({ title: "Uploaded ✅", description: "Media ready to post." });
+      } catch (err) {
+        toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+        setPreview(null);
+        setMediaUrl(null);
+        setMediaType(null);
+      } finally {
+        setUploading(false);
+      }
     };
     reader.readAsDataURL(file);
   };
 
-  const removeImage = () => {
-    setImagePreview(null);
-    setImageDataUrl(null);
+  const removeMedia = () => {
+    setPreview(null);
+    setMediaUrl(null);
+    setMediaType(null);
     if (fileRef.current) fileRef.current.value = "";
   };
 
   const handlePost = async () => {
-    if ((!text.trim() && !imageDataUrl) || posting) return;
+    if ((!text.trim() && !mediaUrl) || posting || uploading) return;
     setPosting(true);
     try {
       const data = await apiService.request("/feed", {
         method: "POST",
-        body: { content: text.trim(), imageUrl: imageDataUrl || null },
+        body: { content: text.trim(), mediaUrl, mediaType },
       });
       onPosted(data.post);
       setText("");
-      removeImage();
+      removeMedia();
       toast({ title: "Posted! 🎉", description: "Your post is live." });
     } catch (err) {
       toast({ title: "Error", description: err.message || "Could not create post.", variant: "destructive" });
@@ -274,38 +393,58 @@ const CreatePost = ({ currentUser, onPosted }) => {
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
-            placeholder="What's on your mind?"
+            placeholder="Share a photo, video, or thought…"
             rows={2}
             maxLength={1000}
             className="w-full bg-transparent text-foreground placeholder:text-muted-foreground text-sm resize-none focus:outline-none"
           />
-          {imagePreview && (
-            <div className="relative mt-2 rounded-xl overflow-hidden border border-border">
-              <img src={imagePreview} alt="preview" className="w-full object-cover max-h-48" />
-              <button
-                onClick={removeImage}
-                className="absolute top-2 right-2 w-7 h-7 bg-black/60 rounded-full flex items-center justify-center hover:bg-black/80 transition-all"
-              >
-                <X className="w-4 h-4 text-white" />
-              </button>
+
+          {/* Preview */}
+          {preview && (
+            <div className="relative mt-2 rounded-xl overflow-hidden border border-border bg-black">
+              {preview.type === "image"
+                ? <img src={preview.url} alt="preview" className="w-full object-cover max-h-48" />
+                : <video src={preview.url} className="w-full max-h-48" controls playsInline />
+              }
+              {uploading && (
+                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2">
+                  <Loader2 className="w-8 h-8 text-white animate-spin" />
+                  <span className="text-white text-xs">Uploading to cloud…</span>
+                </div>
+              )}
+              {!uploading && (
+                <button onClick={removeMedia} className="absolute top-2 right-2 w-7 h-7 bg-black/60 rounded-full flex items-center justify-center">
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              )}
             </div>
           )}
+
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              <ImageIcon className="w-4 h-4" />
-              Photo
-            </button>
-            <input ref={fileRef} type="file" accept="image/*" onChange={handleImage} className="hidden" />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => { if(fileRef.current){ fileRef.current.accept="image/*"; fileRef.current.click(); } }}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                <ImageIcon className="w-4 h-4" /> Photo
+              </button>
+              <button
+                onClick={() => { if(fileRef.current){ fileRef.current.accept="video/*"; fileRef.current.click(); } }}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                <Video className="w-4 h-4" /> Video
+              </button>
+            </div>
+
+            <input ref={fileRef} type="file" accept="image/*,video/*" onChange={handleMedia} className="hidden" />
+
             <button
               onClick={handlePost}
-              disabled={(!text.trim() && !imageDataUrl) || posting}
+              disabled={(!text.trim() && !mediaUrl) || posting || uploading}
               className="px-5 py-1.5 btn-gradient rounded-xl text-sm font-semibold text-foreground disabled:opacity-40 btn-glow transition-all flex items-center gap-2"
             >
-              {posting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Post
+              {(posting || uploading) && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {uploading ? "Uploading…" : posting ? "Posting…" : "Post"}
             </button>
           </div>
         </div>
@@ -314,12 +453,13 @@ const CreatePost = ({ currentUser, onPosted }) => {
   );
 };
 
+// ── Main Feed Page ────────────────────────────────────────────────────────────
+
 const SocialFeed = () => {
   const { isAuthenticated, user } = useContext(AuthContext);
   const navigate                  = useNavigate();
   const { toast }                 = useToast();
 
-  // Load profile from API so _id is always populated even after page refresh
   const [currentUser, setCurrentUser] = useState(user);
   const [posts, setPosts]             = useState([]);
   const [page, setPage]               = useState(1);
@@ -327,11 +467,8 @@ const SocialFeed = () => {
   const [loading, setLoading]         = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  useEffect(() => {
-    if (!isAuthenticated) navigate("/");
-  }, [isAuthenticated, navigate]);
+  useEffect(() => { if (!isAuthenticated) navigate("/"); }, [isAuthenticated, navigate]);
 
-  // Always load full profile from API — fixes delete button disappearing after refresh
   useEffect(() => {
     if (!isAuthenticated) return;
     apiService.getProfile()
@@ -345,7 +482,7 @@ const SocialFeed = () => {
       setPosts(prev => append ? [...prev, ...data.posts] : data.posts);
       setHasMore(data.pagination.hasMore);
       setPage(pageNum);
-    } catch (err) {
+    } catch {
       toast({ title: "Error", description: "Could not load feed.", variant: "destructive" });
     } finally {
       setLoading(false);
@@ -353,9 +490,7 @@ const SocialFeed = () => {
     }
   }, [toast]);
 
-  useEffect(() => {
-    if (isAuthenticated) fetchPosts(1);
-  }, [isAuthenticated, fetchPosts]);
+  useEffect(() => { if (isAuthenticated) fetchPosts(1); }, [isAuthenticated, fetchPosts]);
 
   const loadMore = () => {
     if (loadingMore || !hasMore) return;
@@ -374,12 +509,19 @@ const SocialFeed = () => {
     try {
       await apiService.request(`/feed/${postId}/like`, { method: "POST" });
     } catch {
+      // revert
       setPosts(prev => prev.map(p =>
         p._id === postId
           ? { ...p, liked: !p.liked, likeCount: p.liked ? (p.likeCount ?? 1) - 1 : (p.likeCount ?? 0) + 1 }
           : p
       ));
     }
+  };
+
+  const handleView = async (postId) => {
+    try {
+      await apiService.request(`/feed/${postId}/view`, { method: "POST" });
+    } catch {}
   };
 
   const handleShare = async (postId) => {
@@ -393,7 +535,7 @@ const SocialFeed = () => {
       navigator.share({ title: "SocialPayX", url: window.location.origin + "/feed" }).catch(() => {});
     } else {
       navigator.clipboard.writeText(window.location.origin + "/feed");
-      toast({ title: "Link copied!", description: "Share it with your friends." });
+      toast({ title: "Link copied!" });
     }
   };
 
@@ -408,9 +550,7 @@ const SocialFeed = () => {
   };
 
   const handleComment = (postId, newCount) => {
-    setPosts(prev => prev.map(p =>
-      p._id === postId ? { ...p, commentCount: newCount } : p
-    ));
+    setPosts(prev => prev.map(p => p._id === postId ? { ...p, commentCount: newCount } : p));
   };
 
   if (loading) {
@@ -436,9 +576,9 @@ const SocialFeed = () => {
 
         {posts.length === 0 && (
           <div className="text-center py-16 text-muted-foreground">
-            <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <Play className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="font-medium">No posts yet</p>
-            <p className="text-sm mt-1">Be the first to share something!</p>
+            <p className="text-sm mt-1">Be the first to share a photo or video!</p>
           </div>
         )}
 
@@ -452,6 +592,7 @@ const SocialFeed = () => {
               onShare={handleShare}
               onDelete={handleDelete}
               onComment={handleComment}
+              onView={handleView}
             />
           ))}
         </div>
