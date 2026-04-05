@@ -2,6 +2,7 @@ import { useState, useContext, useEffect, useRef, useCallback } from "react";
 import {
   Heart, Share2, MessageCircle, Image as ImageIcon, X, Send,
   MoreHorizontal, ChevronDown, Loader2, Trash2, Video, Play, Eye,
+  UserPlus, UserCheck,
 } from "lucide-react";
 import { AuthContext } from "../App.jsx";
 import { useNavigate } from "react-router-dom";
@@ -82,26 +83,80 @@ const VideoPlayer = ({ src, postId, onView }) => {
   );
 };
 
+// ── Follow Button ─────────────────────────────────────────────────────────────
+
+const FollowButton = ({ targetUserId, currentUserId }) => {
+  const [following, setFollowing] = useState(null); // null = loading
+  const [busy, setBusy]           = useState(false);
+  const { toast }                 = useToast();
+
+  // Don't show for own posts
+  if (!targetUserId || targetUserId === currentUserId) return null;
+
+  // Lazy-load follow status on first render
+  useEffect(() => {
+    apiService.getFollowStatus(targetUserId)
+      .then(res => setFollowing(res.following))
+      .catch(() => setFollowing(false));
+  }, [targetUserId]);
+
+  const handleToggle = async (e) => {
+    e.stopPropagation();
+    if (busy || following === null) return;
+    setBusy(true);
+    try {
+      const res = await apiService.followUser(targetUserId);
+      setFollowing(res.following);
+    } catch (err) {
+      toast({ title: "Error", description: err.message || "Could not follow user", variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (following === null) return null; // still loading — show nothing
+
+  return (
+    <button
+      onClick={handleToggle}
+      disabled={busy}
+      className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+        following
+          ? "bg-secondary/40 text-muted-foreground hover:bg-red-500/10 hover:text-red-400"
+          : "bg-primary/15 text-primary hover:bg-primary/25"
+      }`}
+    >
+      {busy
+        ? <Loader2 className="w-3 h-3 animate-spin" />
+        : following ? <UserCheck className="w-3 h-3" /> : <UserPlus className="w-3 h-3" />
+      }
+      {following ? "Following" : "Follow"}
+    </button>
+  );
+};
+
 // ── Post Card ─────────────────────────────────────────────────────────────────
 
 const PostCard = ({ post, currentUser, onLike, onShare, onDelete, onComment, onView }) => {
-  const [showComments, setShowComments]       = useState(false);
-  const [comments, setComments]               = useState([]);
-  const [commentsLoaded, setCommentsLoaded]   = useState(false);
-  const [commentText, setCommentText]         = useState("");
-  const [sendingComment, setSendingComment]   = useState(false);
-  const [showMenu, setShowMenu]               = useState(false);
-  const [localViews, setLocalViews]           = useState(post.views ?? 0);
-  const viewFired                             = useRef(false);
-  const { toast } = useToast();
+  const [showComments, setShowComments]     = useState(false);
+  const [comments, setComments]             = useState([]);
+  const [commentsLoaded, setCommentsLoaded] = useState(false);
+  const [commentText, setCommentText]       = useState("");
+  const [sendingComment, setSendingComment] = useState(false);
+  const [showMenu, setShowMenu]             = useState(false);
+  const [localViews, setLocalViews]         = useState(post.views ?? 0);
+  const viewFired                           = useRef(false);
+  const navigate                            = useNavigate();
+  const { toast }                           = useToast();
 
   const currentUserId = currentUser?._id?.toString() || currentUser?.id?.toString();
-  const isOwn = !!currentUserId && post.userId?.toString() === currentUserId;
+  const postUserId    = post.userId?.toString();
+  const isOwn         = !!currentUserId && postUserId === currentUserId;
 
   const mediaUrl  = post.mediaUrl  || post.imageUrl  || null;
   const mediaType = post.mediaType || (post.imageUrl ? "image" : null);
 
-  // Track view when image post is first seen (intersection observer)
+  // Track view when image post enters viewport
   const cardRef = useRef(null);
   useEffect(() => {
     if (mediaType !== "image" || viewFired.current) return;
@@ -163,14 +218,31 @@ const PostCard = ({ post, currentUser, onLike, onShare, onDelete, onComment, onV
 
       {/* Header */}
       <div className="flex items-center justify-between p-4 pb-3">
-        <div className="flex items-center gap-3">
-          <Avatar username={post.username} />
-          <div>
-            <p className="font-semibold text-foreground text-sm">{post.username}</p>
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <button
+            onClick={() => postUserId && navigate(`/profile/${postUserId}`)}
+            className="shrink-0"
+          >
+            <Avatar username={post.username} />
+          </button>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => postUserId && navigate(`/profile/${postUserId}`)}
+                className="font-semibold text-foreground text-sm hover:underline"
+              >
+                {post.username}
+              </button>
+              {/* Follow button — only shown for other users' posts */}
+              {!isOwn && (
+                <FollowButton targetUserId={postUserId} currentUserId={currentUserId} />
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">{timeAgo(post.createdAt)}</p>
           </div>
         </div>
-        <div className="relative">
+
+        <div className="relative shrink-0">
           <button onClick={() => setShowMenu(v => !v)} className="text-muted-foreground hover:text-foreground p-1 rounded-lg">
             <MoreHorizontal className="w-5 h-5" />
           </button>
@@ -501,6 +573,7 @@ const SocialFeed = () => {
   const handlePosted = (newPost) => setPosts(prev => [newPost, ...prev]);
 
   const handleLike = async (postId) => {
+    // Optimistic update
     setPosts(prev => prev.map(p =>
       p._id === postId
         ? { ...p, liked: !p.liked, likeCount: p.liked ? (p.likeCount ?? 1) - 1 : (p.likeCount ?? 0) + 1 }
@@ -509,7 +582,7 @@ const SocialFeed = () => {
     try {
       await apiService.request(`/feed/${postId}/like`, { method: "POST" });
     } catch {
-      // revert
+      // Revert on failure
       setPosts(prev => prev.map(p =>
         p._id === postId
           ? { ...p, liked: !p.liked, likeCount: p.liked ? (p.likeCount ?? 1) - 1 : (p.likeCount ?? 0) + 1 }
