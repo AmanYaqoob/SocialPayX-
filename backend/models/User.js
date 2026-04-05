@@ -53,7 +53,11 @@ const userSchema = new mongoose.Schema({
   referralCode: { type: String, unique: true },
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   referralEarnings: { type: Number, default: 0 },
-  
+
+  // Social follow system
+  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+
   // Task data
   completedTasks: [{ type: String }],
   lastDailyBonus: { type: Date },
