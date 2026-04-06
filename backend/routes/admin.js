@@ -332,10 +332,9 @@ router.put('/deposits/:userId/:depositId', [
     deposit.status = status;
     deposit.processedDate = new Date();
 
-    // If approved, credit SPX to user balance
+    // If approved, credit SPX coins to user's spxCoinBalance
     if (status === 'approved') {
-      user.spxBalance += deposit.amount;
-      user.totalMined  += deposit.amount;
+      user.spxCoinBalance = (user.spxCoinBalance ?? 0) + deposit.amount;
     }
 
     await user.save();
