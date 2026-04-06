@@ -11,7 +11,11 @@ const AdminSettings = () => {
     kycEnabled: true,
     miningEnabled: true,
     referralEnabled: true,
-    withdrawalsEnabled: true,
+    withdrawalsEnabled: false,
+    depositsEnabled: false,
+    spxPrice: 0.20,
+    signupBonusSpx: 25,
+    depositAddress: '',
     usdtWalletAddress: '',
     kycUsdtAmount: 10,
     maintenanceMode: false,
@@ -280,7 +284,7 @@ const AdminSettings = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-foreground">Withdrawals</p>
-                  <p className="text-xs text-muted-foreground">Enable withdrawal requests</p>
+                  <p className="text-xs text-muted-foreground">Allow users to withdraw SPX</p>
                 </div>
                 <button
                   onClick={() => handleChange("withdrawalsEnabled", !settings.withdrawalsEnabled)}
@@ -292,6 +296,55 @@ const AdminSettings = () => {
                     settings.withdrawalsEnabled ? "translate-x-6" : "translate-x-0.5"
                   }`} />
                 </button>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-foreground">Deposits</p>
+                  <p className="text-xs text-muted-foreground">Allow users to deposit SPX</p>
+                </div>
+                <button
+                  onClick={() => handleChange("depositsEnabled", !settings.depositsEnabled)}
+                  className={`w-12 h-6 rounded-full transition-colors ${
+                    settings.depositsEnabled ? "bg-green-500" : "bg-muted"
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-full bg-foreground transition-transform ${
+                    settings.depositsEnabled ? "translate-x-6" : "translate-x-0.5"
+                  }`} />
+                </button>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">SPX Price (USD)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={settings.spxPrice ?? 0.20}
+                  onChange={(e) => handleChange("spxPrice", parseFloat(e.target.value))}
+                  className="w-full px-4 py-3 bg-input border border-border rounded-lg text-foreground"
+                  placeholder="0.20"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Value of 1 SPX in USD</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Signup Bonus (SPX)</label>
+                <input
+                  type="number"
+                  value={settings.signupBonusSpx ?? 25}
+                  onChange={(e) => handleChange("signupBonusSpx", parseFloat(e.target.value))}
+                  className="w-full px-4 py-3 bg-input border border-border rounded-lg text-foreground"
+                  placeholder="25"
+                />
+                <p className="text-xs text-muted-foreground mt-1">SPX credited to new users on signup</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Deposit Address</label>
+                <input
+                  type="text"
+                  value={settings.depositAddress ?? ''}
+                  onChange={(e) => handleChange("depositAddress", e.target.value)}
+                  className="w-full px-4 py-3 bg-input border border-border rounded-lg text-foreground font-mono text-sm"
+                  placeholder="Wallet address users send SPX to"
+                />
               </div>
             </div>
           </div>
