@@ -1,458 +1,425 @@
-import { useState, useContext, useEffect } from "react";
-import {
-  ArrowUpRight, ArrowDownLeft, Copy, Clock, CheckCircle, XCircle,
-  Lock, TrendingUp, Loader2, AlertCircle, Pickaxe,
-} from "lucide-react";
-import { AuthContext } from "../App.jsx";
-import { useNavigate } from "react-router-dom";
-import BottomNav from "../components/BottomNav.jsx";
+import { useState, useEffect } from "react";
+import { Search, Check, X, Clock, AlertTriangle, Copy, ArrowUpRight, ArrowDownLeft, Lock, Unlock } from "lucide-react";
+import AdminLayout from "../../components/AdminLayout.jsx";
 import { useToast } from "@/hooks/use-toast";
-import apiService from "../services/api.js";
+import apiService from "../../services/api.js";
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-const TOKEN_PRICE = 0.01;   // 100 tokens = $1
-const SPX_PRICE   = 0.20;   // 25 SPX = $5
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function toUsd(amount, price) {
-  return (amount * price).toFixed(2);
-}
+const SPX_PRICE = 0.20;
 
 const StatusBadge = ({ status }) => {
   const map = {
-    pending:  { cls: "bg-yellow-500/20 text-yellow-400", icon: <Clock className="w-3 h-3" />,       label: "Pending"  },
-    approved: { cls: "bg-green-500/20 text-green-400",   icon: <CheckCircle className="w-3 h-3" />, label: "Approved" },
-    rejected: { cls: "bg-red-500/20 text-red-400",       icon: <XCircle className="w-3 h-3" />,     label: "Rejected" },
+    pending:  "bg-yellow-500/20 text-yellow-400",
+    approved: "bg-green-500/20 text-green-400",
+    rejected: "bg-red-500/20 text-red-400",
   };
-  const s = map[status] || map.pending;
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${s.cls}`}>
-      {s.icon} {s.label}
+    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${map[status] || map.pending}`}>
+      {status === "pending" && <Clock className="w-3 h-3" />}
+      {status}
     </span>
   );
 };
 
-// ── Lock Overlay ──────────────────────────────────────────────────────────────
+// ── Withdrawals Tab ───────────────────────────────────────────────────────────
 
-const LockedBtn = ({ label, icon: Icon }) => (
-  <div className="flex items-center justify-center gap-2 py-3 bg-muted/40 border border-border rounded-xl text-muted-foreground text-sm cursor-not-allowed select-none">
-    <Lock className="w-4 h-4" /> {label}
-  </div>
-);
-
-// ── Withdraw Modal ────────────────────────────────────────────────────────────
-
-const WithdrawModal = ({ spxCoinBalance, spxPrice, minAmount, onClose, onSuccess }) => {
-  const [amount, setAmount]   = useState("");
-  const [address, setAddress] = useState("");
-  const [busy, setBusy]       = useState(false);
-  const { toast }             = useToast();
-
-  const handleSubmit = async () => {
-    const num = parseFloat(amount);
-    if (!num || num <= 0)     return toast({ title: "Enter a valid amount", variant: "destructive" });
-    if (num < minAmount)      return toast({ title: `Minimum ${minAmount} SPX`, variant: "destructive" });
-    if (num > spxCoinBalance) return toast({ title: "Insufficient SPX balance", variant: "destructive" });
-    if (!address.trim())      return toast({ title: "Enter a wallet address", variant: "destructive" });
-
-    setBusy(true);
-    try {
-      await apiService.requestWithdrawal(num, address.trim());
-      toast({ title: "Withdrawal submitted ✅", description: "Pending admin approval." });
-      onSuccess();
-      onClose();
-    } catch (err) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally { setBusy(false); }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-card border border-border rounded-2xl p-6 space-y-4">
-        <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-          <ArrowUpRight className="w-5 h-5 text-primary" /> Withdraw SPX Coins
-        </h3>
-
-        <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Available SPX</span>
-          <span className="font-bold text-foreground">{spxCoinBalance.toFixed(2)} SPX  <span className="text-muted-foreground font-normal">≈ ${toUsd(spxCoinBalance, spxPrice)}</span></span>
-        </div>
-
-        <div>
-          <label className="text-sm text-muted-foreground mb-1 block">Amount (SPX)</label>
-          <div className="relative">
-            <input
-              type="number"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-              placeholder={`Min ${minAmount} SPX`}
-              className="w-full px-4 py-3 bg-input border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
-            />
-            <button onClick={() => setAmount(spxCoinBalance.toFixed(2))} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-primary hover:underline">MAX</button>
-          </div>
-          {amount && <p className="text-xs text-muted-foreground mt-1">≈ ${toUsd(parseFloat(amount)||0, spxPrice)} USD</p>}
-        </div>
-
-        <div>
-          <label className="text-sm text-muted-foreground mb-1 block">Wallet Address</label>
-          <input
-            type="text"
-            value={address}
-            onChange={e => setAddress(e.target.value)}
-            placeholder="Paste your wallet address"
-            className="w-full px-4 py-3 bg-input border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 font-mono text-sm"
-          />
-        </div>
-
-        <div className="flex gap-3 pt-1">
-          <button onClick={onClose} className="flex-1 py-3 bg-muted rounded-xl font-medium text-muted-foreground">Cancel</button>
-          <button onClick={handleSubmit} disabled={busy} className="flex-1 py-3 btn-gradient rounded-xl font-semibold text-foreground btn-glow flex items-center justify-center gap-2 disabled:opacity-50">
-            {busy && <Loader2 className="w-4 h-4 animate-spin" />} Confirm
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ── Deposit Modal ─────────────────────────────────────────────────────────────
-
-const DepositModal = ({ spxPrice, depositAddress, onClose, onSuccess }) => {
-  const [amount, setAmount] = useState("");
-  const [txid, setTxid]     = useState("");
-  const [busy, setBusy]     = useState(false);
-  const [copied, setCopied] = useState(false);
-  const { toast }           = useToast();
-
-  const copyAddr = () => {
-    if (!depositAddress) return;
-    navigator.clipboard.writeText(depositAddress);
-    setCopied(true);
-    toast({ title: "Address copied!" });
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleSubmit = async () => {
-    const num = parseFloat(amount);
-    if (!num || num <= 0) return toast({ title: "Enter a valid amount", variant: "destructive" });
-    if (!txid.trim())     return toast({ title: "Enter your transaction ID", variant: "destructive" });
-
-    setBusy(true);
-    try {
-      await apiService.requestDeposit(num, txid.trim());
-      toast({ title: "Deposit submitted ✅", description: "Awaiting admin confirmation." });
-      onSuccess();
-      onClose();
-    } catch (err) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally { setBusy(false); }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-card border border-border rounded-2xl p-6 space-y-4">
-        <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-          <ArrowDownLeft className="w-5 h-5 text-green-400" /> Deposit SPX Coins
-        </h3>
-
-        <div className="bg-muted/30 border border-border rounded-xl p-4 space-y-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Send SPX to this address</p>
-          <div className="flex items-center gap-2">
-            <code className="text-xs text-primary bg-primary/10 px-3 py-2 rounded-lg flex-1 break-all font-mono">
-              {depositAddress || "Contact admin for deposit address"}
-            </code>
-            {depositAddress && (
-              <button onClick={copyAddr} className="p-2 bg-primary/10 rounded-lg text-primary hover:bg-primary/20 shrink-0">
-                {copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              </button>
-            )}
-          </div>
-          <p className="text-xs text-yellow-400 flex items-center gap-1">
-            <AlertCircle className="w-3 h-3" /> Only send SPX coins. Other assets will be lost.
-          </p>
-        </div>
-
-        <div>
-          <label className="text-sm text-muted-foreground mb-1 block">Amount (SPX)</label>
-          <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="How many SPX are you depositing?"
-            className="w-full px-4 py-3 bg-input border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50" />
-          {amount && <p className="text-xs text-muted-foreground mt-1">≈ ${toUsd(parseFloat(amount)||0, spxPrice)} USD</p>}
-        </div>
-
-        <div>
-          <label className="text-sm text-muted-foreground mb-1 block">Transaction ID (TXID)</label>
-          <input type="text" value={txid} onChange={e => setTxid(e.target.value)} placeholder="Paste transaction hash after sending"
-            className="w-full px-4 py-3 bg-input border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 font-mono text-sm" />
-        </div>
-
-        <div className="flex gap-3 pt-1">
-          <button onClick={onClose} className="flex-1 py-3 bg-muted rounded-xl font-medium text-muted-foreground">Cancel</button>
-          <button onClick={handleSubmit} disabled={busy} className="flex-1 py-3 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-green-500/30 disabled:opacity-50">
-            {busy && <Loader2 className="w-4 h-4 animate-spin" />} Submit
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ── Main Wallet ───────────────────────────────────────────────────────────────
-
-const Wallet = () => {
-  const { isAuthenticated } = useContext(AuthContext);
-  const navigate = useNavigate();
+const WithdrawalsTab = () => {
   const { toast } = useToast();
+  const [filterStatus, setFilterStatus]   = useState("pending");
+  const [searchQuery, setSearchQuery]     = useState("");
+  const [withdrawals, setWithdrawals]     = useState([]);
+  const [loading, setLoading]             = useState(true);
+  const [copiedAddress, setCopiedAddress] = useState(null);
 
-  const [walletData, setWalletData]     = useState(null);
-  const [withdrawals, setWithdrawals]   = useState([]);
-  const [deposits, setDeposits]         = useState([]);
-  const [kycStatus, setKycStatus]       = useState(null);
-  const [loading, setLoading]           = useState(true);
-  const [showWithdraw, setShowWithdraw] = useState(false);
-  const [showDeposit, setShowDeposit]   = useState(false);
-  const [historyTab, setHistoryTab]     = useState("withdrawals");
+  useEffect(() => { load(); }, [filterStatus]);
 
-  useEffect(() => {
-    if (!isAuthenticated) navigate("/");
-    else loadAll();
-  }, [isAuthenticated]);
-
-  const loadAll = async () => {
+  const load = async () => {
     try {
-      const [bal, wdl, dep, profile] = await Promise.all([
-        apiService.getWalletBalance(),
-        apiService.getWithdrawals(),
-        apiService.getDeposits().catch(() => ({ deposits: [] })),
-        apiService.getProfile(),
-      ]);
-      setWalletData(bal);
-      setWithdrawals(wdl.withdrawals || []);
-      setDeposits(dep.deposits || []);
-      setKycStatus(profile.kycStatus);
+      setLoading(true);
+      const data = await apiService.getWithdrawalRequests(filterStatus === "all" ? undefined : filterStatus);
+      setWithdrawals(data.withdrawals || []);
     } catch {
-      toast({ title: "Failed to load wallet", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to load withdrawals", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-      </div>
-    );
-  }
+  const handleProcess = async (userId, id, status) => {
+    try {
+      await apiService.processWithdrawal(userId, id, status);
+      toast({ title: status === "approved" ? "Approved ✅" : "Rejected", description: `Withdrawal has been ${status}.` });
+      load();
+    } catch (err) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
 
-  const tokenBalance   = walletData?.tokenBalance    ?? 0;
-  const spxCoinBalance = walletData?.spxCoinBalance  ?? 0;
-  const tokenPrice     = walletData?.tokenPrice      ?? TOKEN_PRICE;
-  const spxPrice       = walletData?.spxPrice        ?? SPX_PRICE;
-  const withdrawOk     = walletData?.withdrawalsEnabled ?? false;
-  const depositOk      = walletData?.depositsEnabled    ?? false;
-  const depositAddr    = walletData?.depositAddress     ?? "";
-  const minWithdraw    = walletData?.minWithdrawalAmount ?? 10;
-  const totalUsd       = parseFloat(toUsd(tokenBalance, tokenPrice)) + parseFloat(toUsd(spxCoinBalance, spxPrice));
+  const copyAddress = (addr) => {
+    navigator.clipboard.writeText(addr);
+    setCopiedAddress(addr);
+    toast({ title: "Copied!" });
+    setTimeout(() => setCopiedAddress(null), 2000);
+  };
+
+  const filtered = withdrawals.filter(w =>
+    (w.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     w.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     w.address?.toLowerCase().includes(searchQuery.toLowerCase())) &&
+    (filterStatus === "all" || w.status === filterStatus)
+  );
+
+  const pendingCount = withdrawals.filter(w => w.status === "pending").length;
+  const pendingTotal = withdrawals.filter(w => w.status === "pending").reduce((s, w) => s + w.amount, 0);
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-
-      <header className="px-4 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-foreground">Wallet</h1>
-        <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
-          Total ≈ ${totalUsd.toFixed(2)} USD
-        </span>
-      </header>
-
-      <div className="px-4 space-y-4">
-
-        {/* ── Mining Tokens Card ── */}
-        <div className="bg-card border border-border rounded-2xl p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-11 h-11 rounded-full bg-orange-500/20 border-2 border-orange-500/40 flex items-center justify-center shrink-0">
-              <Pickaxe className="w-5 h-5 text-orange-400" />
-            </div>
-            <div className="flex-1">
-              <p className="font-bold text-foreground">Mining Tokens</p>
-              <p className="text-xs text-muted-foreground">Earned by mining · 100 tokens = $1</p>
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-orange-400">{tokenBalance.toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground">≈ ${toUsd(tokenBalance, tokenPrice)} USD</p>
-            </div>
+    <div className="space-y-4">
+      {/* Controls */}
+      <div className="flex flex-wrap gap-3 items-center justify-between">
+        <div className="flex items-center gap-3">
+          <select
+            value={filterStatus}
+            onChange={e => setFilterStatus(e.target.value)}
+            className="px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none text-sm"
+          >
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search user or address..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-9 pr-4 py-2 bg-input border border-border rounded-lg text-foreground text-sm focus:outline-none w-52"
+            />
           </div>
-
-          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border text-center">
-            <div>
-              <p className="text-xs text-muted-foreground">Price</p>
-              <p className="font-semibold text-foreground text-sm">${tokenPrice.toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Total Mined</p>
-              <p className="font-semibold text-foreground text-sm">{(walletData?.totalMined ?? 0).toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Referral</p>
-              <p className="font-semibold text-foreground text-sm">{(walletData?.referralEarnings ?? 0).toFixed(2)}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* ── SPX Coin Card ── */}
-        <div className="bg-gradient-to-br from-primary/20 via-secondary/10 to-primary/5 border border-primary/20 rounded-2xl p-5">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-11 h-11 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center shrink-0">
-              <span className="text-base font-black text-primary">S</span>
-            </div>
-            <div className="flex-1">
-              <p className="font-bold text-foreground">SPX Coin</p>
-              <p className="text-xs text-muted-foreground">SocialPayX · 25 SPX = $5</p>
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold gradient-text">{spxCoinBalance.toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground">≈ ${toUsd(spxCoinBalance, spxPrice)} USD</p>
-            </div>
-          </div>
-
-          {/* Exchange-style price row */}
-          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-primary/20 text-center mb-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Price</p>
-              <p className="font-semibold text-foreground text-sm">${spxPrice.toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">25 SPX =</p>
-              <p className="font-semibold text-green-400 text-sm">$5.00</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Value</p>
-              <p className="font-semibold text-primary text-sm">${toUsd(spxCoinBalance, spxPrice)}</p>
-            </div>
-          </div>
-
-          {/* Deposit / Withdraw buttons */}
-          <div className="grid grid-cols-2 gap-3">
-            {depositOk ? (
-              <button onClick={() => setShowDeposit(true)} className="flex items-center justify-center gap-2 py-3 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl font-semibold hover:bg-green-500/30 transition-all text-sm">
-                <ArrowDownLeft className="w-4 h-4" /> Deposit
-              </button>
-            ) : (
-              <LockedBtn label="Deposit" icon={ArrowDownLeft} />
-            )}
-
-            {withdrawOk && kycStatus === "approved" ? (
-              <button onClick={() => setShowWithdraw(true)} className="flex items-center justify-center gap-2 py-3 btn-gradient rounded-xl font-semibold text-foreground btn-glow transition-all text-sm">
-                <ArrowUpRight className="w-4 h-4" /> Withdraw
-              </button>
-            ) : withdrawOk && kycStatus !== "approved" ? (
-              <button onClick={() => navigate("/kyc")} className="flex items-center justify-center gap-2 py-3 bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 rounded-xl font-semibold text-sm hover:bg-yellow-500/30">
-                <AlertCircle className="w-4 h-4" /> KYC Required
-              </button>
-            ) : (
-              <LockedBtn label="Withdraw" icon={ArrowUpRight} />
-            )}
-          </div>
-        </div>
-
-        {/* ── Transaction History ── */}
-        <div>
-          <div className="flex bg-card border border-border rounded-2xl p-1 gap-1 mb-3">
-            {[
-              { id: "withdrawals", label: "Withdrawals", count: withdrawals.length },
-              { id: "deposits",    label: "Deposits",    count: deposits.length },
-            ].map(tab => (
-              <button key={tab.id} onClick={() => setHistoryTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium transition-all ${
-                  historyTab === tab.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {tab.label}
-                {tab.count > 0 && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${historyTab === tab.id ? "bg-white/20" : "bg-muted"}`}>
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Withdrawals */}
-          {historyTab === "withdrawals" && (
-            <div className="space-y-2">
-              {withdrawals.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground bg-card border border-border rounded-2xl">
-                  <ArrowUpRight className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">No withdrawals yet</p>
-                </div>
-              ) : withdrawals.map((w, i) => (
-                <div key={i} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
-                      <ArrowUpRight className="w-4 h-4 text-red-400" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground text-sm">Withdrawal</p>
-                      <p className="text-xs text-muted-foreground font-mono truncate max-w-[140px]">{w.address}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(w.requestDate).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                  <div className="text-right space-y-1">
-                    <p className="font-semibold text-red-400 text-sm">-{w.amount.toFixed(2)} SPX</p>
-                    <p className="text-xs text-muted-foreground">≈ ${toUsd(w.amount, spxPrice)}</p>
-                    <StatusBadge status={w.status} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Deposits */}
-          {historyTab === "deposits" && (
-            <div className="space-y-2">
-              {deposits.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground bg-card border border-border rounded-2xl">
-                  <ArrowDownLeft className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">No deposits yet</p>
-                </div>
-              ) : deposits.map((d, i) => (
-                <div key={i} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
-                      <ArrowDownLeft className="w-4 h-4 text-green-400" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground text-sm">Deposit</p>
-                      <p className="text-xs text-muted-foreground font-mono truncate max-w-[140px]">{d.txid}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(d.requestDate).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                  <div className="text-right space-y-1">
-                    <p className="font-semibold text-green-400 text-sm">+{d.amount.toFixed(2)} SPX</p>
-                    <p className="text-xs text-muted-foreground">≈ ${toUsd(d.amount, spxPrice)}</p>
-                    <StatusBadge status={d.status} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
-      {showWithdraw && (
-        <WithdrawModal spxCoinBalance={spxCoinBalance} spxPrice={spxPrice} minAmount={minWithdraw}
-          onClose={() => setShowWithdraw(false)} onSuccess={loadAll} />
-      )}
-      {showDeposit && (
-        <DepositModal spxPrice={spxPrice} depositAddress={depositAddr}
-          onClose={() => setShowDeposit(false)} onSuccess={loadAll} />
+      {/* Alert */}
+      {pendingCount > 0 && (
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-yellow-400" />
+          <div>
+            <p className="font-medium text-foreground">{pendingCount} pending withdrawal{pendingCount > 1 ? "s" : ""}</p>
+            <p className="text-sm text-muted-foreground">Total: {pendingTotal.toFixed(2)} SPX ≈ ${(pendingTotal * SPX_PRICE).toFixed(2)}</p>
+          </div>
+        </div>
       )}
 
-      <BottomNav />
+      {/* Table */}
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">User</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Amount</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Wallet Address</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Status</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Date</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">Loading…</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">No withdrawals found</td></tr>
+              ) : (
+                filtered.map(w => (
+                  <tr key={w._id} className="border-t border-border hover:bg-muted/20">
+                    <td className="px-4 py-4">
+                      <p className="font-medium text-foreground">{w.username}</p>
+                      <p className="text-xs text-muted-foreground">{w.email}</p>
+                    </td>
+                    <td className="px-4 py-4">
+                      <p className="font-semibold text-foreground">{w.amount.toFixed(2)} SPX</p>
+                      <p className="text-xs text-muted-foreground">≈ ${(w.amount * SPX_PRICE).toFixed(2)}</p>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs text-primary bg-primary/10 px-2 py-1 rounded font-mono max-w-[160px] truncate block">
+                          {w.address}
+                        </code>
+                        <button onClick={() => copyAddress(w.address)} className="p-1 hover:bg-primary/10 rounded text-primary">
+                          {copiedAddress === w.address ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4"><StatusBadge status={w.status} /></td>
+                    <td className="px-4 py-4 text-sm text-muted-foreground">
+                      {new Date(w.requestDate).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-4">
+                      {w.status === "pending" ? (
+                        <div className="flex gap-2">
+                          <button onClick={() => handleProcess(w.userId, w._id, "approved")} className="p-2 hover:bg-green-500/10 rounded-lg text-green-400" title="Approve">
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleProcess(w.userId, w._id, "rejected")} className="p-2 hover:bg-red-500/10 rounded-lg text-red-400" title="Reject">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : <span className="text-xs text-muted-foreground">—</span>}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default Wallet;
+// ── Deposits Tab ──────────────────────────────────────────────────────────────
+
+const DepositsTab = () => {
+  const { toast } = useToast();
+  const [filterStatus, setFilterStatus] = useState("pending");
+  const [searchQuery, setSearchQuery]   = useState("");
+  const [deposits, setDeposits]         = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [copied, setCopied]             = useState(null);
+
+  useEffect(() => { load(); }, [filterStatus]);
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      const data = await apiService.getDepositRequests(filterStatus === "all" ? undefined : filterStatus);
+      setDeposits(data.deposits || []);
+    } catch {
+      toast({ title: "Error", description: "Failed to load deposits", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProcess = async (userId, id, status) => {
+    try {
+      await apiService.processDeposit(userId, id, status);
+      toast({ title: status === "approved" ? "Deposit Approved ✅" : "Deposit Rejected", description: status === "approved" ? "SPX credited to user balance." : "Deposit request rejected." });
+      load();
+    } catch (err) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const copyTxid = (txid) => {
+    navigator.clipboard.writeText(txid);
+    setCopied(txid);
+    toast({ title: "TXID Copied!" });
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const filtered = deposits.filter(d =>
+    (d.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     d.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     d.txid?.toLowerCase().includes(searchQuery.toLowerCase())) &&
+    (filterStatus === "all" || d.status === filterStatus)
+  );
+
+  const pendingCount = deposits.filter(d => d.status === "pending").length;
+  const pendingTotal = deposits.filter(d => d.status === "pending").reduce((s, d) => s + d.amount, 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3 items-center">
+        <select
+          value={filterStatus}
+          onChange={e => setFilterStatus(e.target.value)}
+          className="px-3 py-2 bg-input border border-border rounded-lg text-foreground text-sm focus:outline-none"
+        >
+          <option value="all">All</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search user or TXID..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="pl-9 pr-4 py-2 bg-input border border-border rounded-lg text-foreground text-sm focus:outline-none w-52"
+          />
+        </div>
+      </div>
+
+      {pendingCount > 0 && (
+        <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-green-400" />
+          <div>
+            <p className="font-medium text-foreground">{pendingCount} pending deposit{pendingCount > 1 ? "s" : ""} to verify</p>
+            <p className="text-sm text-muted-foreground">Total: {pendingTotal.toFixed(2)} SPX ≈ ${(pendingTotal * SPX_PRICE).toFixed(2)}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">User</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Amount</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Transaction ID</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Status</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Date</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">Loading…</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">No deposits found</td></tr>
+              ) : (
+                filtered.map(d => (
+                  <tr key={d._id} className="border-t border-border hover:bg-muted/20">
+                    <td className="px-4 py-4">
+                      <p className="font-medium text-foreground">{d.username}</p>
+                      <p className="text-xs text-muted-foreground">{d.email}</p>
+                    </td>
+                    <td className="px-4 py-4">
+                      <p className="font-semibold text-green-400">+{d.amount.toFixed(2)} SPX</p>
+                      <p className="text-xs text-muted-foreground">≈ ${(d.amount * SPX_PRICE).toFixed(2)}</p>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs text-primary bg-primary/10 px-2 py-1 rounded font-mono max-w-[160px] truncate block">
+                          {d.txid}
+                        </code>
+                        <button onClick={() => copyTxid(d.txid)} className="p-1 hover:bg-primary/10 rounded text-primary">
+                          {copied === d.txid ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4"><StatusBadge status={d.status} /></td>
+                    <td className="px-4 py-4 text-sm text-muted-foreground">
+                      {new Date(d.requestDate).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-4">
+                      {d.status === "pending" ? (
+                        <div className="flex gap-2">
+                          <button onClick={() => handleProcess(d.userId, d._id, "approved")} className="p-2 hover:bg-green-500/10 rounded-lg text-green-400" title="Approve & Credit SPX">
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleProcess(d.userId, d._id, "rejected")} className="p-2 hover:bg-red-500/10 rounded-lg text-red-400" title="Reject">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : <span className="text-xs text-muted-foreground">—</span>}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Main Component ────────────────────────────────────────────────────────────
+
+const AdminWithdrawals = () => {
+  const [activeTab, setActiveTab] = useState("withdrawals");
+  const { toast } = useToast();
+  const [depositsEnabled, setDepositsEnabled]       = useState(false);
+  const [withdrawalsEnabled, setWithdrawalsEnabled] = useState(false);
+  const [togglingDeposit, setTogglingDeposit]       = useState(false);
+  const [togglingWithdrawal, setTogglingWithdrawal] = useState(false);
+
+  useEffect(() => {
+    apiService.getAdminSettings()
+      .then(s => {
+        setDepositsEnabled(s.depositsEnabled ?? false);
+        setWithdrawalsEnabled(s.withdrawalsEnabled ?? false);
+      })
+      .catch(() => {});
+  }, []);
+
+  const toggleSetting = async (key, val, setFn, setBusy) => {
+    setBusy(true);
+    try {
+      await apiService.updateSettings({ [key]: val });
+      setFn(val);
+      toast({ title: `${key === 'depositsEnabled' ? 'Deposits' : 'Withdrawals'} ${val ? 'enabled ✅' : 'locked 🔒'}` });
+    } catch (err) {
+      toast({ title: "Failed to update setting", description: err.message, variant: "destructive" });
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <AdminLayout>
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-foreground">Deposits & Withdrawals</h1>
+          <p className="text-muted-foreground">Review and process user fund requests</p>
+
+          {/* Quick-toggle unlock buttons */}
+          <div className="flex flex-wrap gap-3 mt-4">
+            <button
+              onClick={() => toggleSetting('depositsEnabled', !depositsEnabled, setDepositsEnabled, setTogglingDeposit)}
+              disabled={togglingDeposit}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all disabled:opacity-50 ${
+                depositsEnabled
+                  ? "bg-green-500/20 text-green-400 border-green-500/40 hover:bg-green-500/30"
+                  : "bg-muted text-muted-foreground border-border hover:text-foreground"
+              }`}
+            >
+              {depositsEnabled ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+              Deposits: {depositsEnabled ? "ENABLED" : "LOCKED"}
+            </button>
+
+            <button
+              onClick={() => toggleSetting('withdrawalsEnabled', !withdrawalsEnabled, setWithdrawalsEnabled, setTogglingWithdrawal)}
+              disabled={togglingWithdrawal}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all disabled:opacity-50 ${
+                withdrawalsEnabled
+                  ? "bg-primary/20 text-primary border-primary/40 hover:bg-primary/30"
+                  : "bg-muted text-muted-foreground border-border hover:text-foreground"
+              }`}
+            >
+              {withdrawalsEnabled ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+              Withdrawals: {withdrawalsEnabled ? "ENABLED" : "LOCKED"}
+            </button>
+          </div>
+        </div>
+
+        {/* Tab switcher */}
+        <div className="flex bg-card border border-border rounded-xl p-1 gap-1 mb-6 w-fit">
+          <button
+            onClick={() => setActiveTab("withdrawals")}
+            className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === "withdrawals" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <ArrowUpRight className="w-4 h-4" /> Withdrawals
+          </button>
+          <button
+            onClick={() => setActiveTab("deposits")}
+            className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === "deposits" ? "bg-green-500 text-white" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <ArrowDownLeft className="w-4 h-4" /> Deposits
+          </button>
+        </div>
+
+        {activeTab === "withdrawals" ? <WithdrawalsTab /> : <DepositsTab />}
+      </div>
+    </AdminLayout>
+  );
+};
+
+export default AdminWithdrawals;
