@@ -69,6 +69,14 @@ const userSchema = new mongoose.Schema({
     status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
     requestDate: { type: Date, default: Date.now },
     processedDate: Date
+  }],
+
+  depositRequests: [{
+    amount: Number,
+    txid: String,
+    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+    requestDate: { type: Date, default: Date.now },
+    processedDate: Date
   }]
 }, {
   timestamps: true
