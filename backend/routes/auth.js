@@ -46,7 +46,7 @@ router.post('/register', [
     const settings = await Settings.findOne() || new Settings();
     const signupBonus = settings.signupBonusSpx ?? 25;
 
-    // Create user with signup bonus
+    // Create user — give SPX coin signup bonus (separate from mining tokens)
     const user = new User({
       email,
       password,
@@ -54,8 +54,10 @@ router.post('/register', [
       username,
       referralCode: newReferralCode,
       referredBy: referredBy?._id,
-      spxBalance: signupBonus,   // 25 SPX signup bonus
-      totalMined: signupBonus,
+      spxCoinBalance: signupBonus,  // 25 SPX coins = $5 signup bonus
+      tokenBalance: 0,
+      spxBalance: 0,
+      totalMined: 0,
     });
 
     await user.save();
@@ -75,13 +77,13 @@ router.post('/register', [
     res.status(201).json({
       requiresVerification: false,
       email: user.email,
-      message: `Registration successful! You received ${signupBonus} SPX welcome bonus.`,
+      message: `Registration successful! You received ${signupBonus} SPX coins ($${(signupBonus * 0.20).toFixed(2)}) as a welcome bonus.`,
       user: {
         id: user._id,
         email: user.email,
         username: user.username,
         isEmailVerified: true,
-        spxBalance: signupBonus,
+        spxCoinBalance: signupBonus,
       }
     });
   } catch (error) {
