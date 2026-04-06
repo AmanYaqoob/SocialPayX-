@@ -79,6 +79,8 @@ class ApiService {
   async getWalletBalance()    { return this.request('/wallet/balance'); }
   async requestWithdrawal(amount, address) { return this.request('/wallet/withdraw', { method: 'POST', body: { amount, address } }); }
   async getWithdrawals()      { return this.request('/wallet/withdrawals'); }
+  async requestDeposit(amount, txid) { return this.request('/wallet/deposit', { method: 'POST', body: { amount, txid } }); }
+  async getDeposits()         { return this.request('/wallet/deposits'); }
 
   // ── News ──────────────────────────────────────────────────────────────────
   async getNews(params = {})  { const q = new URLSearchParams(params).toString(); return this.request(`/news${q ? '?' + q : ''}`); }
@@ -110,6 +112,8 @@ class ApiService {
   async updateSettings(s)     { return this.request('/admin/settings', { method: 'PUT', body: s }); }
   async getWithdrawalRequests(status = 'pending') { return this.request(`/admin/withdrawals?status=${status}`); }
   async processWithdrawal(userId, withdrawalId, status) { return this.request(`/admin/withdrawals/${userId}/${withdrawalId}`, { method: 'PUT', body: { status } }); }
+  async getDepositRequests(status = 'pending') { return this.request(`/admin/deposits?status=${status}`); }
+  async processDeposit(userId, depositId, status) { return this.request(`/admin/deposits/${userId}/${depositId}`, { method: 'PUT', body: { status } }); }
 
   // ── Admin Tasks ───────────────────────────────────────────────────────────
   async getAdminTasks()            { return this.request('/admin/tasks'); }
