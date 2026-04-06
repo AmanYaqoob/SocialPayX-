@@ -228,14 +228,18 @@ router.get('/settings/public', async (req, res) => {
       await settings.save();
     }
     
-    // Return public settings including USDT wallet
     res.json({
       kycEnabled: settings.kycEnabled,
       miningEnabled: settings.miningEnabled,
       referralEnabled: settings.referralEnabled,
       withdrawalsEnabled: settings.withdrawalsEnabled,
+      depositsEnabled: settings.depositsEnabled,
       usdtWalletAddress: settings.usdtWalletAddress,
-      kycUsdtAmount: settings.kycUsdtAmount
+      kycUsdtAmount: settings.kycUsdtAmount,
+      spxPrice: settings.spxPrice ?? 0.20,
+      signupBonusSpx: settings.signupBonusSpx ?? 25,
+      depositAddress: settings.depositAddress ?? '',
+      minWithdrawalAmount: settings.minWithdrawalAmount ?? 10,
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -272,6 +276,70 @@ router.put('/settings', adminAuth, async (req, res) => {
 
     await settings.save();
     res.json({ message: 'Settings updated successfully', settings });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+
+// GET /api/admin/deposits
+router.get('/deposits', adminAuth, async (req, res) => {
+  try {
+    const status = req.query.status || 'pending';
+
+    const users = await User.find({
+      'depositRequests.status': status
+    }).select('username email depositRequests');
+
+    const deposits = [];
+    users.forEach(user => {
+      (user.depositRequests || [])
+        .filter(d => d.status === status)
+        .forEach(d => {
+          deposits.push({
+            _id: d._id,
+            userId: user._id,
+            username: user.username,
+            email: user.email,
+            amount: d.amount,
+            txid: d.txid,
+            status: d.status,
+            requestDate: d.requestDate,
+          });
+        });
+    });
+
+    deposits.sort((a, b) => b.requestDate - a.requestDate);
+    res.json({ deposits });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// PUT /api/admin/deposits/:userId/:depositId
+router.put('/deposits/:userId/:depositId', [
+  adminAuth,
+  body('status').isIn(['approved', 'rejected'])
+], async (req, res) => {
+  try {
+    const { status } = req.body;
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const deposit = (user.depositRequests || []).id(req.params.depositId);
+    if (!deposit) return res.status(404).json({ message: 'Deposit request not found' });
+
+    deposit.status = status;
+    deposit.processedDate = new Date();
+
+    // If approved, credit SPX to user balance
+    if (status === 'approved') {
+      user.spxBalance += deposit.amount;
+      user.totalMined  += deposit.amount;
+    }
+
+    await user.save();
+    res.json({ message: `Deposit ${status} successfully` });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
