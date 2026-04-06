@@ -17,13 +17,17 @@ const userSchema = new mongoose.Schema({
   passwordResetToken: { type: String },
   passwordResetExpires: { type: Date },
   
-  // Mining data
-  spxBalance: { type: Number, default: 0 },
-  miningRate: { type: Number, default: 0.1 }, // SPX per hour
+  // Mining tokens (100 tokens = $1)
+  tokenBalance: { type: Number, default: 0 },     // mining rewards — 100 = $1
+  spxBalance: { type: Number, default: 0 },        // legacy alias (kept for compat)
+  miningRate: { type: Number, default: 0.1 },      // tokens per hour
   lastMiningClaim: { type: Date, default: Date.now },
   isMining: { type: Boolean, default: false },
   miningStartTime: { type: Date },
-  totalMined: { type: Number, default: 0 },
+  totalMined: { type: Number, default: 0 },        // total tokens ever mined
+
+  // SPX Coin (25 SPX = $5, i.e. 1 SPX = $0.20)
+  spxCoinBalance: { type: Number, default: 0 },    // SPX coins (signup bonus + deposits)
   
   // KYC data
   kycStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
