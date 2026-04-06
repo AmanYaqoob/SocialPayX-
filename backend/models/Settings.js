@@ -7,9 +7,12 @@ const settingsSchema = new mongoose.Schema({
   depositsEnabled: { type: Boolean, default: false },      // locked by default
   referralEnabled: { type: Boolean, default: true },
 
-  // SPX coin settings
-  spxPrice: { type: Number, default: 0.20 },              // $0.20 per SPX
-  signupBonusSpx: { type: Number, default: 25 },          // 25 SPX on signup
+  // Mining token settings (100 tokens = $1)
+  tokenPrice: { type: Number, default: 0.01 },            // $0.01 per token
+
+  // SPX Coin settings (25 SPX = $5, so 1 SPX = $0.20)
+  spxPrice: { type: Number, default: 0.20 },              // $0.20 per SPX coin
+  signupBonusSpx: { type: Number, default: 25 },          // 25 SPX coins on signup ($5 value)
 
   // Mining settings
   minClaimAmount: { type: Number, default: 1 },
