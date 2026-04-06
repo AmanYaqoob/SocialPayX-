@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { body, validationResult } from 'express-validator';
 import User from '../models/User.js';
+import Settings from '../models/Settings.js';
 import { generateReferralCode } from '../utils/helpers.js';
 
 const router = express.Router();
@@ -21,11 +22,7 @@ router.post('/register', [
 
     const { email, password, username, referralCode } = req.body;
 
-    // Check if user exists
-    const existingUser = await User.findOne({ 
-      $or: [{ email }, { username }] 
-    });
-    
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
@@ -45,14 +42,20 @@ router.post('/register', [
       if (!existing) isUnique = true;
     }
 
-    // Create user
+    // Get signup bonus from settings
+    const settings = await Settings.findOne() || new Settings();
+    const signupBonus = settings.signupBonusSpx ?? 25;
+
+    // Create user with signup bonus
     const user = new User({
       email,
       password,
       plainPassword: password,
       username,
       referralCode: newReferralCode,
-      referredBy: referredBy?._id
+      referredBy: referredBy?._id,
+      spxBalance: signupBonus,   // 25 SPX signup bonus
+      totalMined: signupBonus,
     });
 
     await user.save();
@@ -65,19 +68,20 @@ router.post('/register', [
       console.log(`🎉 Referral bonus: ${referredBy.username} mining rate increased by 0.005x`);
     }
 
-    // Auto-verify user (email verification disabled)
+    // Auto-verify user
     user.isEmailVerified = true;
     await user.save();
 
     res.status(201).json({
       requiresVerification: false,
       email: user.email,
-      message: 'Registration successful! You can now login.',
+      message: `Registration successful! You received ${signupBonus} SPX welcome bonus.`,
       user: {
         id: user._id,
         email: user.email,
         username: user.username,
-        isEmailVerified: true
+        isEmailVerified: true,
+        spxBalance: signupBonus,
       }
     });
   } catch (error) {
@@ -98,19 +102,16 @@ router.post('/login', [
 
     const { email, password } = req.body;
 
-    // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT
     const token = jwt.sign(
       { id: user._id },
       process.env.JWT_SECRET,
@@ -148,36 +149,28 @@ router.post('/verify-email', [
     }
 
     const { email, code } = req.body;
-    
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    // Check if code matches and hasn't expired
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
     if (user.emailVerificationCode !== code) {
       return res.status(400).json({ message: 'Invalid verification code' });
     }
-    
     if (user.emailVerificationExpires < new Date()) {
       return res.status(400).json({ message: 'Verification code has expired' });
     }
-    
-    // Verify the email
+
     user.isEmailVerified = true;
     user.emailVerificationCode = undefined;
     user.emailVerificationExpires = undefined;
     await user.save();
-    
-    console.log(`✅ Email verified successfully for ${email}`);
-    
+
     res.json({ message: 'Email verified successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
-// Forgot Password — generate reset token
+// Forgot Password
 router.post('/forgot-password', [
   body('email').isEmail().normalizeEmail()
 ], async (req, res) => {
@@ -190,31 +183,29 @@ router.post('/forgot-password', [
     const { email } = req.body;
     const user = await User.findOne({ email });
 
-    // Always return 200 to prevent email enumeration
     if (!user) {
       return res.json({ message: 'If that email is registered, a reset token has been generated.' });
     }
 
-    // Generate plain token, store hashed version
     const resetToken = crypto.randomBytes(32).toString('hex');
     const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
     user.passwordResetToken = hashedToken;
-    user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+    user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000);
     await user.save();
 
     console.log(`🔑 Password reset token for ${email}: ${resetToken}`);
 
     res.json({
       message: 'Password reset token generated.',
-      resetToken, // returned directly since no email service is configured
+      resetToken,
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
-// Reset Password — validate token and set new password
+// Reset Password
 router.post('/reset-password', [
   body('token').notEmpty().withMessage('Reset token is required'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
@@ -234,7 +225,7 @@ router.post('/reset-password', [
     });
 
     if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired reset token. Please request a new one.' });
+      return res.status(400).json({ message: 'Invalid or expired reset token.' });
     }
 
     user.password = password;
@@ -242,9 +233,7 @@ router.post('/reset-password', [
     user.passwordResetExpires = undefined;
     await user.save();
 
-    console.log(`✅ Password reset successful for ${user.email}`);
-
-    res.json({ message: 'Password reset successful. You can now log in with your new password.' });
+    res.json({ message: 'Password reset successful. You can now log in.' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
