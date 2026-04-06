@@ -19,7 +19,7 @@ async function autoStopIfExpired(user) {
   const earnings = cappedHours * user.miningRate;
 
   await User.findByIdAndUpdate(user._id, {
-    $inc: { spxBalance: earnings, totalMined: earnings },
+    $inc: { tokenBalance: earnings, spxBalance: earnings, totalMined: earnings },
     isMining: false,
     miningStartTime: null,
     lastMiningClaim: new Date(),
@@ -82,7 +82,7 @@ router.post('/stop', auth, async (req, res) => {
     const earnings = miningHours * user.miningRate;
 
     await User.findByIdAndUpdate(req.user.id, {
-      $inc: { spxBalance: earnings, totalMined: earnings },
+      $inc: { tokenBalance: earnings, spxBalance: earnings, totalMined: earnings },
       isMining: false,
       miningStartTime: null,
       lastMiningClaim: new Date(),
@@ -134,6 +134,7 @@ router.get('/status', auth, async (req, res) => {
       currentEarnings,
       timeRemainingMs,
       miningRate: parseFloat(miningRate.toFixed(4)),
+      tokenBalance: user.tokenBalance ?? user.spxBalance,
       spxBalance: user.spxBalance,
       totalMined: user.totalMined,
       miningEnabled: settings.miningEnabled,
