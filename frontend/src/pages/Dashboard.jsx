@@ -65,7 +65,8 @@ const Dashboard = () => {
       
       setMiningData(miningStatus);
       setIsMining(miningStatus.isMining);
-      setBalance(walletBalance.spxBalance);
+      // Use tokenBalance (mining rewards); fall back to spxBalance for old accounts
+      setBalance(walletBalance.tokenBalance ?? walletBalance.spxBalance ?? 0);
       setMinedAmount(miningStatus.currentEarnings || 0);
     } catch (error) {
       toast({
@@ -172,7 +173,7 @@ const Dashboard = () => {
             onClick={handleClaim}
             className="mt-4 px-8 py-3 bg-accent/20 border border-accent text-accent rounded-xl font-medium hover:bg-accent/30 transition-colors"
           >
-            Claim {minedAmount.toFixed(5)} SPX
+            Claim {minedAmount.toFixed(5)} Tokens
           </button>
         )}
       </div>
@@ -183,8 +184,8 @@ const Dashboard = () => {
           <div className="bg-card border border-border rounded-xl p-4">
             <p className="text-xs text-muted-foreground mb-1">Total Balance</p>
             <p className="text-xl font-bold text-foreground">
-              <span className="gradient-text">{balance.toFixed(2)}</span>
-              <span className="text-primary text-sm ml-1">SPX</span>
+              <span className="gradient-text">{(balance ?? 0).toFixed(2)}</span>
+              <span className="text-primary text-sm ml-1">Tokens</span>
             </p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4">
