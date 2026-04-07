@@ -15,8 +15,13 @@ const SPX_PRICE   = 0.20;   // 25 SPX = $5
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+function safeNum(val) {
+  const n = parseFloat(val);
+  return isNaN(n) ? 0 : n;
+}
+
 function toUsd(amount, price) {
-  return (amount * price).toFixed(2);
+  return (safeNum(amount) * safeNum(price)).toFixed(2);
 }
 
 const StatusBadge = ({ status }) => {
@@ -247,15 +252,24 @@ const Wallet = () => {
     );
   }
 
-  const tokenBalance   = walletData?.tokenBalance    ?? 0;
-  const spxCoinBalance = walletData?.spxCoinBalance  ?? 0;
-  const tokenPrice     = walletData?.tokenPrice      ?? TOKEN_PRICE;
-  const spxPrice       = walletData?.spxPrice        ?? SPX_PRICE;
-  const withdrawOk     = walletData?.withdrawalsEnabled ?? false;
-  const depositOk      = walletData?.depositsEnabled    ?? false;
-  const depositAddr    = walletData?.depositAddress     ?? "";
-  const minWithdraw    = walletData?.minWithdrawalAmount ?? 10;
-  const totalUsd       = parseFloat(toUsd(tokenBalance, tokenPrice)) + parseFloat(toUsd(spxCoinBalance, spxPrice));
+  const tokenBalance     = safeNum(walletData?.tokenBalance);
+  const spxCoinBalance   = safeNum(walletData?.spxCoinBalance);
+  const referralEarnings = safeNum(walletData?.referralEarnings);
+  const spxLegacy        = safeNum(walletData?.spxBalance);   // legacy spxBalance field
+  const tokenPrice       = safeNum(walletData?.tokenPrice)  || TOKEN_PRICE;
+  const spxPrice         = safeNum(walletData?.spxPrice)    || SPX_PRICE;
+  const withdrawOk       = walletData?.withdrawalsEnabled ?? false;
+  const depositOk        = walletData?.depositsEnabled    ?? false;
+  const depositAddr      = walletData?.depositAddress     ?? "";
+  const minWithdraw      = safeNum(walletData?.minWithdrawalAmount) || 10;
+
+  // Sum all token sources for total portfolio value
+  const totalUsd = (
+    parseFloat(toUsd(tokenBalance,     tokenPrice)) +
+    parseFloat(toUsd(spxCoinBalance,   spxPrice))   +
+    parseFloat(toUsd(referralEarnings, tokenPrice)) +
+    (spxLegacy > tokenBalance ? parseFloat(toUsd(spxLegacy - tokenBalance, tokenPrice)) : 0)
+  );
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -288,18 +302,37 @@ const Wallet = () => {
           <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border text-center">
             <div>
               <p className="text-xs text-muted-foreground">Price</p>
-              <p className="font-semibold text-foreground text-sm">${tokenPrice.toFixed(2)}</p>
+              <p className="font-semibold text-foreground text-sm">${tokenPrice.toFixed(4)}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Mined</p>
-              <p className="font-semibold text-foreground text-sm">{(walletData?.totalMined ?? 0).toFixed(2)}</p>
+              <p className="font-semibold text-foreground text-sm">{safeNum(walletData?.totalMined).toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Referral</p>
-              <p className="font-semibold text-foreground text-sm">{(walletData?.referralEarnings ?? 0).toFixed(2)}</p>
+              <p className="text-xs text-muted-foreground">USD Value</p>
+              <p className="font-semibold text-orange-400 text-sm">${toUsd(tokenBalance, tokenPrice)}</p>
             </div>
           </div>
         </div>
+
+        {/* ── Referral Earnings Card ── */}
+        {referralEarnings > 0 && (
+          <div className="bg-card border border-border rounded-2xl p-5">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-full bg-purple-500/20 border-2 border-purple-500/40 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-5 h-5 text-purple-400" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-foreground">Referral Earnings</p>
+                <p className="text-xs text-muted-foreground">Bonus tokens from referrals · same rate as mining</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-purple-400">{referralEarnings.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">≈ ${toUsd(referralEarnings, tokenPrice)} USD</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── SPX Coin Card ── */}
         <div className="bg-gradient-to-br from-primary/20 via-secondary/10 to-primary/5 border border-primary/20 rounded-2xl p-5">
