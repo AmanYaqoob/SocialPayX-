@@ -77,6 +77,68 @@ router.get('/users', adminAuth, async (req, res) => {
   }
 });
 
+// Full user edit (balances, profile, social, KYC, roles)
+router.put('/users/:id', adminAuth, async (req, res) => {
+  try {
+    const {
+      username,
+      email,
+      isActive,
+      isAdmin,
+      isSubAdmin,
+      isEmailVerified,
+      kycStatus,
+      kycRejectionReason,
+      spxBalance,
+      tokenBalance,
+      spxCoinBalance,
+      totalMined,
+      miningRate,
+      referralEarnings,
+      followersCount,
+      followingCount,
+    } = req.body;
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (username    !== undefined) user.username    = username;
+    if (email       !== undefined) user.email       = email;
+    if (isActive    !== undefined) user.isActive    = isActive;
+    if (isAdmin     !== undefined) user.isAdmin     = isAdmin;
+    if (isSubAdmin  !== undefined) user.isSubAdmin  = isSubAdmin;
+    if (isEmailVerified !== undefined) user.isEmailVerified = isEmailVerified;
+
+    if (kycStatus          !== undefined) user.kycStatus          = kycStatus;
+    if (kycRejectionReason !== undefined) user.kycRejectionReason = kycRejectionReason;
+
+    if (spxBalance       !== undefined) user.spxBalance       = parseFloat(spxBalance);
+    if (tokenBalance     !== undefined) user.tokenBalance     = parseFloat(tokenBalance);
+    if (spxCoinBalance   !== undefined) user.spxCoinBalance   = parseFloat(spxCoinBalance);
+    if (totalMined       !== undefined) user.totalMined       = parseFloat(totalMined);
+    if (miningRate       !== undefined) user.miningRate       = parseFloat(miningRate);
+    if (referralEarnings !== undefined) user.referralEarnings = parseFloat(referralEarnings);
+
+    if (followersCount !== undefined) {
+      const t = parseInt(followersCount);
+      if (t < user.followers.length) user.followers = user.followers.slice(0, t);
+    }
+    if (followingCount !== undefined) {
+      const t = parseInt(followingCount);
+      if (t < user.following.length) user.following = user.following.slice(0, t);
+    }
+
+    await user.save();
+    const updated = await User.findById(req.params.id)
+      .select('-password')
+      .populate('referredBy', 'username referralCode');
+
+    res.json({ message: 'User updated successfully', user: updated });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // Update user status
 router.put('/users/:id/status', adminAuth, async (req, res) => {
   try {
