@@ -15,12 +15,14 @@ router.get('/balance', auth, async (req, res) => {
     ]);
     const s = settings || {};
 
-    const tokenPrice = s.tokenPrice  ?? 0.01;   // 100 tokens = $1
-    const spxPrice   = s.spxPrice    ?? 0.20;   // 25 SPX = $5
+    const tokenPrice = parseFloat(s.tokenPrice) || 0.01;   // 100 tokens = $1
+    const spxPrice   = parseFloat(s.spxPrice)   || 0.20;   // 25 SPX = $5
 
     // tokenBalance is mining rewards — fall back to spxBalance for old accounts
-    const tokenBalance = user.tokenBalance ?? user.spxBalance ?? 0;
-    const spxCoinBalance = user.spxCoinBalance ?? 0;
+    const tokenBalance   = parseFloat(user.tokenBalance ?? user.spxBalance ?? 0) || 0;
+    const spxCoinBalance = parseFloat(user.spxCoinBalance ?? 0) || 0;
+    const referralEarnings = parseFloat(user.referralEarnings ?? 0) || 0;
+    const totalMined       = parseFloat(user.totalMined ?? 0) || 0;
 
     res.json({
       // Mining tokens
@@ -33,16 +35,21 @@ router.get('/balance', auth, async (req, res) => {
       spxPrice,
       spxUsdValue: parseFloat((spxCoinBalance * spxPrice).toFixed(2)),
 
-      // Legacy
-      spxBalance: user.spxBalance ?? 0,
-      totalMined: user.totalMined ?? 0,
-      referralEarnings: user.referralEarnings ?? 0,
+      // Referral & mining stats
+      referralEarnings,
+      totalMined,
+      spxBalance: parseFloat(user.spxBalance ?? 0) || 0,
+
+      // Grand total USD
+      totalUsdValue: parseFloat(
+        ((tokenBalance + referralEarnings) * tokenPrice + spxCoinBalance * spxPrice).toFixed(2)
+      ),
 
       // Feature flags
       withdrawalsEnabled:  s.withdrawalsEnabled  ?? false,
       depositsEnabled:     s.depositsEnabled      ?? false,
       depositAddress:      s.depositAddress       ?? '',
-      minWithdrawalAmount: s.minWithdrawalAmount  ?? 10,
+      minWithdrawalAmount: parseFloat(s.minWithdrawalAmount) || 10,
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
