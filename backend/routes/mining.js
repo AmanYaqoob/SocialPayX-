@@ -93,7 +93,8 @@ router.post('/stop', auth, async (req, res) => {
     res.json({
       message: 'Mining stopped successfully',
       earnings,
-      newBalance: updatedUser.spxBalance,
+      newBalance: updatedUser.tokenBalance ?? updatedUser.spxBalance,
+      tokenBalance: updatedUser.tokenBalance ?? updatedUser.spxBalance,
       totalMined: updatedUser.totalMined,
     });
   } catch (error) {
