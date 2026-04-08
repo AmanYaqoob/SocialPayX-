@@ -32,7 +32,8 @@ app.use(cors({
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 300,
+  skip: (req) => req.path.startsWith('/api/upload'), // uploads are already auth-gated
 });
 app.use(limiter);
 
