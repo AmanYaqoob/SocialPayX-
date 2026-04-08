@@ -399,9 +399,9 @@ const CreatePost = ({ currentUser, onPosted }) => {
       return;
     }
 
-    const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+    const maxSize = 25 * 1024 * 1024; // 25 MB for both images and videos
     if (file.size > maxSize) {
-      toast({ title: "Too large", description: isVideo ? "Max 100MB for videos" : "Max 10MB for images", variant: "destructive" });
+      toast({ title: "Too large", description: "Max 25MB for photos and videos", variant: "destructive" });
       return;
     }
 
@@ -409,13 +409,25 @@ const CreatePost = ({ currentUser, onPosted }) => {
     setPreview({ url: localUrl, type: isVideo ? "video" : "image" });
     setUploading(true);
 
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
+    // Use FormData (multipart) — avoids base64 bloat and Nginx body-size limits
+    (async () => {
       try {
-        const data = await apiService.request("/upload", {
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch(`${import.meta.env.VITE_API_URL || "https://socialpayx.com/api"}/upload`, {
           method: "POST",
-          body: { file: ev.target.result, resourceType: isVideo ? "video" : "image" },
+          headers: {
+            ...(token && { Authorization: `Bearer ${token}` }),
+            // Do NOT set Content-Type — browser sets it with boundary automatically
+          },
+          body: formData,
         });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || "Upload failed");
+
         setMediaUrl(data.url);
         setMediaType(data.type);
         toast({ title: "Uploaded ✅", description: "Media ready to post." });
@@ -427,8 +439,7 @@ const CreatePost = ({ currentUser, onPosted }) => {
       } finally {
         setUploading(false);
       }
-    };
-    reader.readAsDataURL(file);
+    })();
   };
 
   const removeMedia = () => {
