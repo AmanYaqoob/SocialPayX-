@@ -92,7 +92,7 @@ const EditUserModal = ({ user, onClose, onSaved }) => {
       setPostsLoading(true);
       try {
         const token = localStorage.getItem("adminToken") || localStorage.getItem("token") || localStorage.getItem("subadmin_token");
-        const apiBase = import.meta.env.VITE_API_URL || "";
+        const apiBase = (import.meta.env.VITE_API_URL || "").replace(/\/api$/, "");
         const res = await fetch(`${apiBase}/api/admin/users/${user._id}/posts`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -113,7 +113,7 @@ const EditUserModal = ({ user, onClose, onSaved }) => {
     setLikeSaving(s => ({ ...s, [postId]: true }));
     try {
       const token = localStorage.getItem("adminToken") || localStorage.getItem("token") || localStorage.getItem("subadmin_token");
-      const apiBase = import.meta.env.VITE_API_URL || "";
+      const apiBase = (import.meta.env.VITE_API_URL || "").replace(/\/api$/, "");
       const res = await fetch(`${apiBase}/api/admin/posts/${postId}/likes`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -134,7 +134,7 @@ const EditUserModal = ({ user, onClose, onSaved }) => {
     setSaving(true);
     try {
       const token = localStorage.getItem("adminToken") || localStorage.getItem("token") || localStorage.getItem("subadmin_token");
-      const apiBase = import.meta.env.VITE_API_URL || "";
+      const apiBase = (import.meta.env.VITE_API_URL || "").replace(/\/api$/, "");
       const res = await fetch(`${apiBase}/api/admin/users/${user._id}`, {
         method: "PUT",
         headers: {
@@ -320,7 +320,7 @@ const AdminUsers = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("adminToken") || localStorage.getItem("token") || localStorage.getItem("subadmin_token");
-      const apiBase = import.meta.env.VITE_API_URL || "";
+      const apiBase = (import.meta.env.VITE_API_URL || "").replace(/\/api$/, "");
       const params = search ? `?search=${encodeURIComponent(search)}` : "";
       const res = await fetch(`${apiBase}/api/admin/users${params}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -345,7 +345,7 @@ const AdminUsers = () => {
   const toggleUserStatus = async (user) => {
     try {
       const token = localStorage.getItem("adminToken") || localStorage.getItem("token") || localStorage.getItem("subadmin_token");
-      const apiBase = import.meta.env.VITE_API_URL || "";
+      const apiBase = (import.meta.env.VITE_API_URL || "").replace(/\/api$/, "");
       const res = await fetch(`${apiBase}/api/admin/users/${user._id}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
