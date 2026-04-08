@@ -8,7 +8,7 @@ class ApiService {
   }
 
   updateToken() {
-    this.token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    this.token = localStorage.getItem('token') || sessionStorage.getItem('token') || localStorage.getItem('subadmin_token');
   }
 
   setToken(token) {
