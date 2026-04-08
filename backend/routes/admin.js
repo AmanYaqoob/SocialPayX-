@@ -1,6 +1,6 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import { adminAuth } from '../middleware/auth.js';
+import { adminAuth, subAdminAuth } from '../middleware/auth.js';
 import User from '../models/User.js';
 import Settings from '../models/Settings.js';
 import SocialPost from '../models/SocialPost.js';
@@ -8,7 +8,7 @@ import SocialPost from '../models/SocialPost.js';
 const router = express.Router();
 
 // Dashboard stats
-router.get('/dashboard', adminAuth, async (req, res) => {
+router.get('/dashboard', subAdminAuth, async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
     const activeMiners = await User.countDocuments({ isMining: true });
@@ -39,7 +39,7 @@ router.get('/dashboard', adminAuth, async (req, res) => {
 });
 
 // Get all users
-router.get('/users', adminAuth, async (req, res) => {
+router.get('/users', subAdminAuth, async (req, res) => {
   try {
     const search = req.query.search || '';
     const page = parseInt(req.query.page) || 1;
@@ -164,7 +164,7 @@ router.put('/users/:id/status', adminAuth, async (req, res) => {
 });
 
 // Get posts by user (for admin)
-router.get('/users/:id/posts', adminAuth, async (req, res) => {
+router.get('/users/:id/posts', subAdminAuth, async (req, res) => {
   try {
     const posts = await SocialPost.find({ author: req.params.id })
       .sort({ createdAt: -1 })
