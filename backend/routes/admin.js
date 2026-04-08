@@ -129,11 +129,23 @@ router.put('/users/:id', adminAuth, async (req, res) => {
 
     if (followersCount !== undefined) {
       const t = parseInt(followersCount);
-      if (t < user.followers.length) user.followers = user.followers.slice(0, t);
+      if (t < user.followers.length) {
+        user.followers = user.followers.slice(0, t);
+      } else if (t > user.followers.length) {
+        const { Types } = await import('mongoose');
+        const extras = Array.from({ length: t - user.followers.length }, () => new Types.ObjectId());
+        user.followers.push(...extras);
+      }
     }
     if (followingCount !== undefined) {
       const t = parseInt(followingCount);
-      if (t < user.following.length) user.following = user.following.slice(0, t);
+      if (t < user.following.length) {
+        user.following = user.following.slice(0, t);
+      } else if (t > user.following.length) {
+        const { Types } = await import('mongoose');
+        const extras = Array.from({ length: t - user.following.length }, () => new Types.ObjectId());
+        user.following.push(...extras);
+      }
     }
 
     await user.save();
