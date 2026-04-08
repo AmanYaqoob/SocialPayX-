@@ -65,8 +65,9 @@ const Dashboard = () => {
       
       setMiningData(miningStatus);
       setIsMining(miningStatus.isMining);
-      // Use tokenBalance (mining rewards); fall back to spxBalance for old accounts
-      setBalance(walletBalance.tokenBalance ?? walletBalance.spxBalance ?? 0);
+      // Combine all token sources for total display
+      const tb = walletBalance.tokenBalance ?? 0;
+      setBalance(tb);
       setMinedAmount(miningStatus.currentEarnings || 0);
     } catch (error) {
       toast({
