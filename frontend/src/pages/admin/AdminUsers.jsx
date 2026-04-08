@@ -91,7 +91,7 @@ const EditUserModal = ({ user, onClose, onSaved }) => {
     const loadPosts = async () => {
       setPostsLoading(true);
       try {
-        const token = localStorage.getItem("adminToken");
+        const token = localStorage.getItem("adminToken") || localStorage.getItem("subadmin_token");
         const apiBase = import.meta.env.VITE_API_URL || "";
         const res = await fetch(`${apiBase}/api/admin/users/${user._id}/posts`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -112,7 +112,7 @@ const EditUserModal = ({ user, onClose, onSaved }) => {
   const handleSetLikes = async (postId) => {
     setLikeSaving(s => ({ ...s, [postId]: true }));
     try {
-      const token = localStorage.getItem("adminToken");
+      const token = localStorage.getItem("adminToken") || localStorage.getItem("subadmin_token");
       const apiBase = import.meta.env.VITE_API_URL || "";
       const res = await fetch(`${apiBase}/api/admin/posts/${postId}/likes`, {
         method: "PUT",
@@ -133,7 +133,7 @@ const EditUserModal = ({ user, onClose, onSaved }) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem("adminToken");
+      const token = localStorage.getItem("adminToken") || localStorage.getItem("subadmin_token");
       const apiBase = import.meta.env.VITE_API_URL || "";
       const res = await fetch(`${apiBase}/api/admin/users/${user._id}`, {
         method: "PUT",
@@ -319,7 +319,7 @@ const AdminUsers = () => {
   const loadUsers = async (search = "") => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("adminToken");
+      const token = localStorage.getItem("adminToken") || localStorage.getItem("subadmin_token");
       const apiBase = import.meta.env.VITE_API_URL || "";
       const params = search ? `?search=${encodeURIComponent(search)}` : "";
       const res = await fetch(`${apiBase}/api/admin/users${params}`, {
@@ -344,7 +344,7 @@ const AdminUsers = () => {
 
   const toggleUserStatus = async (user) => {
     try {
-      const token = localStorage.getItem("adminToken");
+      const token = localStorage.getItem("adminToken") || localStorage.getItem("subadmin_token");
       const apiBase = import.meta.env.VITE_API_URL || "";
       const res = await fetch(`${apiBase}/api/admin/users/${user._id}/status`, {
         method: "PUT",
