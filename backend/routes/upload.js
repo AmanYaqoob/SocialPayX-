@@ -17,17 +17,22 @@ router.post('/', auth, async (req, res) => {
 
     if (!file) return res.status(400).json({ message: 'No file provided' });
 
-    // Only allow image or video
     if (!['image', 'video'].includes(resourceType)) {
       return res.status(400).json({ message: 'Invalid resource type' });
     }
 
-    const result = await cloudinary.uploader.upload(file, {
+    const uploadOptions = {
       resource_type: resourceType,
       folder:        'socialpayx',
-      quality:       'auto',       // auto compress
-      fetch_format:  'auto',       // best format for browser
-    });
+      quality:       'auto',
+      fetch_format:  'auto',
+      timeout:       120000, // 2 min timeout for large videos
+    };
+
+    // Use upload_large for videos (handles chunked upload, avoids timeouts)
+    const result = resourceType === 'video'
+      ? await cloudinary.uploader.upload_large(file, { ...uploadOptions, chunk_size: 6 * 1024 * 1024 })
+      : await cloudinary.uploader.upload(file, uploadOptions);
 
     res.json({
       url:  result.secure_url,
