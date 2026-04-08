@@ -42,7 +42,7 @@ router.post('/complete', auth, async (req, res) => {
       return res.status(400).json({ message: 'Task already completed' });
     }
 
-    user.spxBalance += task.reward;
+    user.tokenBalance = (user.tokenBalance || 0) + task.reward;
     user.totalMined += task.reward;
     user.completedTasks = [...(user.completedTasks || []), taskId];
     await user.save();
