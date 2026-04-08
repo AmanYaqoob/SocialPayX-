@@ -32,7 +32,7 @@ const SubAdminLogin = () => {
       localStorage.setItem("subadmin_token", data.token);
       localStorage.setItem("subadmin_user", JSON.stringify(data.user));
       toast({ title: "Welcome!", description: "Logged in to Content Manager" });
-      navigate("/subadmin/news");
+      navigate("/subadmin/dashboard");
     } catch (error) {
       toast({ title: "Login Failed", description: error.message, variant: "destructive" });
     } finally {
