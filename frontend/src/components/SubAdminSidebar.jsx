@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Newspaper, ClipboardList, LogOut, ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
+import { Newspaper, ClipboardList, LogOut, ChevronLeft, ChevronRight, BookOpen, LayoutDashboard, Users } from "lucide-react";
 import { useState } from "react";
 
 const SubAdminSidebar = () => {
@@ -8,8 +8,10 @@ const SubAdminSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
 
   const menuItems = [
-    { icon: Newspaper,     label: "News",  path: "/subadmin/news"  },
-    { icon: ClipboardList, label: "Tasks", path: "/subadmin/tasks" },
+    { icon: LayoutDashboard, label: "Dashboard", path: "/subadmin/dashboard" },
+    { icon: Users,           label: "Users",     path: "/subadmin/users"     },
+    { icon: Newspaper,       label: "News",      path: "/subadmin/news"      },
+    { icon: ClipboardList,   label: "Tasks",     path: "/subadmin/tasks"     },
   ];
 
   const handleLogout = () => {
