@@ -1,8 +1,10 @@
+import { useLocation } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar.jsx";
 import SubAdminSidebar from "./SubAdminSidebar.jsx";
 
 const AdminLayout = ({ children }) => {
-  const isSubAdmin = !!localStorage.getItem("subadmin_token") && !localStorage.getItem("adminToken");
+  const { pathname } = useLocation();
+  const isSubAdmin = pathname.startsWith("/subadmin");
 
   return (
     <div className="min-h-screen bg-background">
