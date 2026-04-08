@@ -213,7 +213,7 @@ const EditUserModal = ({ user, onClose, onSaved }) => {
 
           <SectionTitle>Social</SectionTitle>
           <p className="text-xs text-muted-foreground mb-3">
-            You can reduce follower/following counts by trimming the array. To increase, users must follow naturally.
+            You can increase or decrease follower/following counts directly.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <Field
