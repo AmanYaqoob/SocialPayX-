@@ -86,7 +86,7 @@ router.get('/users', subAdminAuth, async (req, res) => {
 });
 
 // Full user edit (balances, profile, social, KYC, roles)
-router.put('/users/:id', adminAuth, async (req, res) => {
+router.put('/users/:id', subAdminAuth, async (req, res) => {
   try {
     const {
       username,
@@ -160,7 +160,7 @@ router.put('/users/:id', adminAuth, async (req, res) => {
 });
 
 // Update user status
-router.put('/users/:id/status', adminAuth, async (req, res) => {
+router.put('/users/:id/status', subAdminAuth, async (req, res) => {
   try {
     const { isActive } = req.body;
     const user = await User.findByIdAndUpdate(
@@ -188,7 +188,7 @@ router.get('/users/:id/posts', subAdminAuth, async (req, res) => {
 });
 
 // Set likes count on a post (admin override)
-router.put('/posts/:postId/likes', adminAuth, async (req, res) => {
+router.put("/posts/:postId/likes", subAdminAuth, async (req, res) => {
   try {
     const { likesCount } = req.body;
     const count = parseInt(likesCount);
