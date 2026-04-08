@@ -15,37 +15,43 @@ router.get('/balance', auth, async (req, res) => {
     ]);
     const s = settings || {};
 
-    const tokenPrice = parseFloat(s.tokenPrice) || 0.01;   // 100 tokens = $1
-    const spxPrice   = parseFloat(s.spxPrice)   || 0.20;   // 25 SPX = $5
+    const tokenPrice = parseFloat(s.tokenPrice) || 0.01;
+    const spxPrice   = parseFloat(s.spxPrice)   || 0.20;
 
-    // tokenBalance is mining rewards — fall back to spxBalance for old accounts
-    const tokenBalance   = parseFloat(user.tokenBalance ?? user.spxBalance ?? 0) || 0;
-    const spxCoinBalance = parseFloat(user.spxCoinBalance ?? 0) || 0;
-    const referralEarnings = parseFloat(user.referralEarnings ?? 0) || 0;
-    const totalMined       = parseFloat(user.totalMined ?? 0) || 0;
+    // Guarantee every user has at least 25 SPX coins
+    if ((user.spxCoinBalance ?? 0) < 25) {
+      user.spxCoinBalance = 25;
+      await user.save();
+    }
+
+    // All token sources merged into one total
+    const miningTokens    = parseFloat(user.tokenBalance     ?? 0) || 0;
+    const taskTokens      = parseFloat(user.spxBalance       ?? 0) || 0; // tasks wrote here
+    const referralTokens  = parseFloat(user.referralEarnings ?? 0) || 0;
+    const totalTokens     = miningTokens + taskTokens + referralTokens;
+
+    const spxCoinBalance  = parseFloat(user.spxCoinBalance   ?? 25) || 25;
+    const totalMined      = parseFloat(user.totalMined       ?? 0)  || 0;
 
     res.json({
-      // Mining tokens
-      tokenBalance,
+      tokenBalance:    totalTokens,   // all tokens combined
+      miningTokens,
+      taskTokens,
+      referralEarnings: referralTokens,
       tokenPrice,
-      tokenUsdValue: parseFloat((tokenBalance * tokenPrice).toFixed(2)),
+      tokenUsdValue: parseFloat((totalTokens * tokenPrice).toFixed(2)),
 
-      // SPX Coins
       spxCoinBalance,
       spxPrice,
       spxUsdValue: parseFloat((spxCoinBalance * spxPrice).toFixed(2)),
 
-      // Referral & mining stats
-      referralEarnings,
       totalMined,
-      spxBalance: parseFloat(user.spxBalance ?? 0) || 0,
+      spxBalance: taskTokens,
 
-      // Grand total USD
       totalUsdValue: parseFloat(
-        ((tokenBalance + referralEarnings) * tokenPrice + spxCoinBalance * spxPrice).toFixed(2)
+        (totalTokens * tokenPrice + spxCoinBalance * spxPrice).toFixed(2)
       ),
 
-      // Feature flags
       withdrawalsEnabled:  s.withdrawalsEnabled  ?? false,
       depositsEnabled:     s.depositsEnabled      ?? false,
       depositAddress:      s.depositAddress       ?? '',
