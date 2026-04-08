@@ -136,6 +136,8 @@ const App = () => {
 
               {/* Sub-Admin Routes */}
               <Route path="/subadmin/login" element={<SubAdminLogin />} />
+              <Route path="/subadmin/dashboard" element={<AdminDashboard />} />
+              <Route path="/subadmin/users" element={<AdminUsers />} />
               <Route path="/subadmin/news" element={<SubAdminNews />} />
               <Route path="/subadmin/tasks" element={<SubAdminTasks />} />
             </Routes>
