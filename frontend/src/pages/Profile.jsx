@@ -159,17 +159,25 @@ const Profile = () => {
         setSocialStats(stats);
         setFollowerCount(stats?.followers ?? 0);
       } else {
-        // Viewing someone else's profile — fetch their public stats + follow status
-        const [status, stats] = await Promise.all([
+        // Viewing someone else's profile
+        const [status, publicProfile] = await Promise.all([
           apiService.getFollowStatus(targetUserId).catch(() => ({ following: false, followersCount: 0, followingCount: 0 })),
-          apiService.getSocialStats().catch(() => null),  // their stats not available via current API — show basic info
+          apiService.request(`/user/${targetUserId}/public`).catch(() => null),
         ]);
         setIsFollowing(status.following);
         setFollowerCount(status.followersCount);
-        // For now load own profile data as a fallback (extend with public profile endpoint when needed)
-        const profile = await apiService.getProfile();
-        setUserData(profile);
-        setSocialStats(null);
+        if (publicProfile) {
+          setUserData({ username: publicProfile.username, _id: publicProfile._id });
+          setSocialStats({
+            totalPosts:  publicProfile.totalPosts,
+            totalLikes:  publicProfile.totalLikes,
+            totalViews:  publicProfile.totalViews,
+            followers:   publicProfile.followersCount,
+            following:   publicProfile.followingCount,
+            recentPosts: publicProfile.recentPosts,
+          });
+          setFollowerCount(publicProfile.followersCount);
+        }
       }
     } catch {
       toast({ title: "Error", description: "Failed to load profile data", variant: "destructive" });
