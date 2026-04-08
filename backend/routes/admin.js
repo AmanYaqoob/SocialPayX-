@@ -178,7 +178,7 @@ router.put('/users/:id/status', subAdminAuth, async (req, res) => {
 // Get posts by user (for admin)
 router.get('/users/:id/posts', subAdminAuth, async (req, res) => {
   try {
-    const posts = await SocialPost.find({ author: req.params.id })
+    const posts = await SocialPost.find({ userId: req.params.id })
       .sort({ createdAt: -1 })
       .select('_id content likes createdAt imageUrl');
     res.json({ posts });
