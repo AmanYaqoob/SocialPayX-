@@ -70,8 +70,6 @@ const EditUserModal = ({ user, onClose, onSaved }) => {
     username: user.username || "",
     email: user.email || "",
     isActive: user.isActive ?? true,
-    isAdmin: user.isAdmin ?? false,
-    isSubAdmin: user.isSubAdmin ?? false,
     isEmailVerified: user.isEmailVerified ?? false,
     kycStatus: user.kycStatus || "pending",
     kycRejectionReason: user.kycRejectionReason || "",
@@ -181,8 +179,6 @@ const EditUserModal = ({ user, onClose, onSaved }) => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
             <Field label="Active" value={form.isActive} onChange={set("isActive")} type="checkbox" />
             <Field label="Email Verified" value={form.isEmailVerified} onChange={set("isEmailVerified")} type="checkbox" />
-            <Field label="Admin" value={form.isAdmin} onChange={set("isAdmin")} type="checkbox" />
-            <Field label="Sub-Admin" value={form.isSubAdmin} onChange={set("isSubAdmin")} type="checkbox" />
           </div>
 
           <SectionTitle>KYC</SectionTitle>
