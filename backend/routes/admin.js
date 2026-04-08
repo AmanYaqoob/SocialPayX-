@@ -3,6 +3,7 @@ import { body, validationResult } from 'express-validator';
 import { adminAuth } from '../middleware/auth.js';
 import User from '../models/User.js';
 import Settings from '../models/Settings.js';
+import SocialPost from '../models/SocialPost.js';
 
 const router = express.Router();
 
@@ -40,35 +41,42 @@ router.get('/dashboard', adminAuth, async (req, res) => {
 // Get all users
 router.get('/users', adminAuth, async (req, res) => {
   try {
+    const search = req.query.search || '';
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+    const limit = parseInt(req.query.limit) || 0; // 0 = no limit (fetch all)
+    const skip = limit ? (page - 1) * limit : 0;
 
-    const users = await User.find()
+    const filter = search
+      ? { $or: [
+          { username: { $regex: search, $options: 'i' } },
+          { email:    { $regex: search, $options: 'i' } },
+        ]}
+      : {};
+
+    const query = User.find(filter)
       .select('-password')
       .populate('referredBy', 'username referralCode')
       .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+      .skip(skip);
 
-    // Get referral count for each user
+    if (limit) query.limit(limit);
+
+    const users = await query;
+
     const usersWithReferralCount = await Promise.all(
       users.map(async (user) => {
         const referralCount = await User.countDocuments({ referredBy: user._id });
-        return {
-          ...user.toObject(),
-          referralCount
-        };
+        return { ...user.toObject(), referralCount };
       })
     );
 
-    const total = await User.countDocuments();
+    const total = await User.countDocuments(filter);
 
     res.json({
       users: usersWithReferralCount,
       pagination: {
         current: page,
-        pages: Math.ceil(total / limit),
+        pages: limit ? Math.ceil(total / limit) : 1,
         total
       }
     });
@@ -150,6 +158,44 @@ router.put('/users/:id/status', adminAuth, async (req, res) => {
     ).select('-password');
 
     res.json({ message: 'User status updated', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get posts by user (for admin)
+router.get('/users/:id/posts', adminAuth, async (req, res) => {
+  try {
+    const posts = await SocialPost.find({ author: req.params.id })
+      .sort({ createdAt: -1 })
+      .select('_id content likes createdAt imageUrl');
+    res.json({ posts });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Set likes count on a post (admin override)
+router.put('/posts/:postId/likes', adminAuth, async (req, res) => {
+  try {
+    const { likesCount } = req.body;
+    const count = parseInt(likesCount);
+    if (isNaN(count) || count < 0) return res.status(400).json({ message: 'Invalid likes count' });
+
+    const post = await SocialPost.findById(req.params.postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    // Pad or trim the likes array with placeholder ObjectIds
+    const mongoose = (await import('mongoose')).default;
+    const current = post.likes.length;
+    if (count > current) {
+      const extras = Array.from({ length: count - current }, () => new mongoose.Types.ObjectId());
+      post.likes.push(...extras);
+    } else {
+      post.likes = post.likes.slice(0, count);
+    }
+    await post.save();
+    res.json({ message: 'Likes updated', likesCount: post.likes.length });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
