@@ -76,6 +76,51 @@ router.get('/social-stats', auth, async (req, res) => {
   }
 });
 
+// GET /api/user/:id/public — public profile for any user
+router.get('/:id/public', auth, async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid user id.' });
+    }
+
+    const target = await User.findById(req.params.id)
+      .select('username _id followers following createdAt')
+      .lean();
+    if (!target) return res.status(404).json({ message: 'User not found.' });
+
+    const posts = await SocialPost.find({ userId: req.params.id }).lean();
+
+    const recentPosts = posts
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 6)
+      .map(p => ({
+        _id:       p._id,
+        content:   p.content,
+        mediaUrl:  p.mediaUrl || p.imageUrl || null,
+        mediaType: p.mediaType || (p.imageUrl ? 'image' : null),
+        likes:     p.likes?.length ?? 0,
+        comments:  p.comments?.length ?? 0,
+        shares:    p.shares ?? 0,
+        views:     p.views ?? 0,
+        createdAt: p.createdAt,
+      }));
+
+    res.json({
+      _id:            target._id,
+      username:       target.username,
+      followersCount: target.followers?.length ?? 0,
+      followingCount: target.following?.length ?? 0,
+      totalPosts:     posts.length,
+      totalLikes:     posts.reduce((s, p) => s + (p.likes?.length ?? 0), 0),
+      totalViews:     posts.reduce((s, p) => s + (p.views ?? 0), 0),
+      recentPosts,
+      createdAt:      target.createdAt,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // POST /api/user/:id/follow — follow or unfollow a user (toggle)
 router.post('/:id/follow', auth, async (req, res) => {
   try {
