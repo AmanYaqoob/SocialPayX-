@@ -229,7 +229,7 @@ const Dashboard = () => {
 
             {/* X (Twitter) */}
             <a
-              href="https://x.com/SocialPayX"
+              href="https://x.com/socialpay_x"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 p-3 bg-background border border-border rounded-xl hover:border-white/30 hover:bg-white/5 transition-all group"
@@ -265,7 +265,7 @@ const Dashboard = () => {
 
             {/* Instagram */}
             <a
-              href="https://www.instagram.com/socialpayx?igsh=bzIyZGNqYjZ6NWVn"
+              href="https://www.instagram.com/socialpay_x?igsh=MWFreTdvejQydWxxbQ%3D%3D"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 p-3 bg-background border border-border rounded-xl hover:border-[#E1306C]/40 hover:bg-[#E1306C]/5 transition-all group"
